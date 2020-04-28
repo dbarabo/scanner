@@ -1,6 +1,8 @@
 package ru.barabo.scanner.main
 
+import ru.barabo.afina.AccessMode
 import ru.barabo.afina.AfinaQuery
+import ru.barabo.afina.UserDepartment
 import ru.barabo.afina.VersionChecker
 import ru.barabo.afina.gui.ModalConnect
 import ru.barabo.gui.swing.ResourcesManager
@@ -80,7 +82,11 @@ class Scanner : JFrame() {
     }
 
     private fun title(): String {
-        val (userName, departmentName, workPlace, _, userId, _) = AfinaQuery.getUserDepartment()
+
+        AfinaQuery.setUserDepartmentData(initUserDepartment())
+
+        val (userName, departmentName, workPlace, _,
+                userId, _, _, accountCode) = AfinaQuery.getUserDepartment()
 
         val user = userName ?: userId
 
@@ -88,8 +94,35 @@ class Scanner : JFrame() {
 
         val header = "Сканер-Платежи"
 
-        return "$header [$db] [$user] [$departmentName] [$workPlace]"
+        return "$header [$db] [$user] [$departmentName] [$workPlace] [$accountCode]"
     }
 }
 
-private const val CHECK_WORKPLACE = "{ call od.XLS_REPORT_ALL.checkWorkplace }"
+private const val CHECK_WORKPLACE = "{ call od.PTKB_CASH.checkWorkplace }"
+
+private const val SEL_CURSOR_USER_DEPARTMENT = "{ ? = call od.PTKB_CASH.getUserAndDepartment }"
+
+private fun initUserDepartment(): UserDepartment {
+    val data = AfinaQuery.selectCursor(query = SEL_CURSOR_USER_DEPARTMENT)
+
+    val row = if(data.isEmpty()) throw Exception("Юзер не зареган :(") else data[0]
+
+    val userName = row[0] as? String
+
+    val departmentName = row[1] as? String
+
+    val workPlace = row[2] as? String ?: throw Exception("Не определено рабочее место :(")
+
+    val userId = row[3] as? String ?: throw Exception("Где юзер? Что это вообще такое???")
+
+    val workPlaceId =  (row[4] as? Number)?.toLong() ?: throw Exception("workPlaceId куда-то деляся :(")
+
+    val departmentId = (row[5] as? Number)?.toLong()
+
+    val accountId = (row[6] as? Number)?.toLong()
+
+    val accountCode = (row[7] as? String) ?: ""
+
+    return UserDepartment(userName, departmentName, workPlace, AccessMode.byWorkPlace(workPlace), userId, workPlaceId,
+            departmentId, accountCode, accountId)
+}

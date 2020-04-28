@@ -5,7 +5,6 @@ import java.awt.KeyEventDispatcher
 import java.awt.KeyboardFocusManager
 import java.awt.event.KeyEvent
 import java.awt.event.KeyEvent.KEY_LOCATION_UNKNOWN
-import javax.swing.JComponent
 import javax.swing.JTextArea
 
 object ScannerDispatcher : KeyEventDispatcher {
@@ -118,8 +117,6 @@ private val ALL_TAGS = arrayOf("PERSONALACC", "BIC", "NAME", "PAYEEINN", "PERSAC
         "LASTNAME", "FIRSTNAME", "MIDDLENAME", "PAYERADDRESS", "PERSACC", "PAYMPERIOD", "TAXPERIOD", "DOCNO",
         "CATEGORY", "KPP", "FIO", "BANKNAME", "CORRESPACC", "PAYERADDRESS")
 
-
-
 private const val FIRST_CHAR: Int = 65535
 
 private const val END_CHAR: Int = 10
@@ -127,7 +124,7 @@ private const val END_CHAR: Int = 10
 fun Map<String, String>.findAmount(): Double? = this["SUM"]?.toIntOrNull()?.div(100.0)
 
 fun Map<String, String>.findFio(): String = this["FIO"]
-        ?: this["LASTNAME"].let { "$it ${this["FIRSTNAME"]?:EMPTY} ${this["MIDDLENAME"]?:EMPTY}".trim() }
+        ?: this["LASTNAME"]?.let { "$it ${this["FIRSTNAME"]?:EMPTY} ${this["MIDDLENAME"]?:EMPTY}".trim() } ?: ""
 
 fun Map<String, String>.findPayee(): String = this["NAME"]?:""
 

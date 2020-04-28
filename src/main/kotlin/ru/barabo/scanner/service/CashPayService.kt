@@ -7,8 +7,6 @@ import ru.barabo.db.service.StoreFilterService
 import ru.barabo.gui.swing.processShowError
 import ru.barabo.scanner.entity.CashPay
 import java.awt.im.InputContext
-import java.lang.Exception
-import javax.swing.JTextArea
 
 object CashPayService : StoreFilterService<CashPay>(AfinaOrm, CashPay::class.java), ScanEventListener {
 
@@ -34,10 +32,16 @@ object CashPayService : StoreFilterService<CashPay>(AfinaOrm, CashPay::class.jav
         }
     }
 
-    fun saved() {
+    fun newPay() {
         scannerInfo.clear()
         createNewEntity()
         sentRefreshAllListener(EditType.EDIT)
+    }
+
+    fun savePay() {
+        val entity = selectedEntity() ?: throw Exception("Не найден платеж для сохранения")
+
+
     }
 
     private fun infoToCashPay(): CashPay {
@@ -83,4 +87,5 @@ object CashPayService : StoreFilterService<CashPay>(AfinaOrm, CashPay::class.jav
 fun isRusLanguage() = InputContext.getInstance().locale.toString().contains("RU", true)
 
 fun String.ifEmpty(other: String) = if(this.isEmpty()) other else this
+
 

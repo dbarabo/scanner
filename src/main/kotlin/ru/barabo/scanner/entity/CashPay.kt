@@ -1,10 +1,7 @@
 package ru.barabo.scanner.entity
 
 import ru.barabo.afina.SEQ_CLASSIFIED
-import ru.barabo.db.annotation.ColumnName
-import ru.barabo.db.annotation.ColumnType
-import ru.barabo.db.annotation.SelectQuery
-import ru.barabo.db.annotation.SequenceName
+import ru.barabo.db.annotation.*
 import java.sql.Timestamp
 
 @SelectQuery("select * from dual where 1 = 0")
@@ -14,25 +11,37 @@ data class CashPay(
         @ColumnType(java.sql.Types.BIGINT)
         var id: Long? = null,
 
+        @ColumnName("AFINA_DOC")
+        @ColumnType(java.sql.Types.BIGINT)
+        var idAfinaDoc: Long? = null,
+
         @ColumnName("STATE")
         var state: Long = 0L,
 
-        @ColumnName("LABEL")
+        @ColumnName("DOC_NUMBER")
         var numberCashDoc: String = "",
 
-        @ColumnName("CASH_ACCOUNT")
+        @ColumnName("CASH_ACCOUNT_CODE")
+        @ReadOnly
         var cashAccount: String = "",
 
+        @ColumnName("CASH_ACCOUNT")
+        @ReadOnly
+        var cashAccountId: Long? = null,
+
         @ColumnName("PAY_ACCOUNT")
+        @ReadOnly
         var payAccount: String = "",
 
         @ColumnName("AMOUNT")
         var amount: Double = 0.0,
 
         @ColumnName("CASH_SYMBOL1")
+        @ReadOnly
         var cashSymbol1: String = "",
 
         @ColumnName("CASH_SYMBOL2")
+        @ReadOnly
         var cashSymbol2: String = "",
 
         @ColumnName("DESCRIPTION_PAY")
@@ -41,37 +50,40 @@ data class CashPay(
         @ColumnName("PAYER_FIO")
         var payerFio: String = "",
 
-        @ColumnName("PAYER_ID")
+        @ColumnName("PAYER_CLIENT")
         var payerId: Long? = null,
 
         @ColumnName("IS_RESIDENT")
         var isResident: Long = 1L,
 
+        @ColumnName("PAYER_REGION_ID")
+        var regionId: Long? = null,
+
         @ColumnName("REGION")
         var region: String = "",
 
-        @ColumnName("BIRTH_PLACE")
+        @ColumnName("PAYER_BIRTH_PLACE")
         var birthPlace: String = "",
 
-        @ColumnName("BIRTH_DAY")
+        @ColumnName("PAYER_BIRTH_DATE")
         var birthDate: Timestamp? = null,
 
-        @ColumnName("TYPE_PASPORT")
-        var typePasport: Long = 0,
+        @ColumnName("PAYER_DOC_TYPE")
+        var typePasport: Long? = null,
 
-        @ColumnName("LINE_PASPORT")
+        @ColumnName("PAYER_DOC_LINE")
         var linePasport: String = "",
 
-        @ColumnName("NUMBER_PASPORT")
+        @ColumnName("PAYER_DOC_NUMBER")
         var numberPasport: String = "",
 
-        @ColumnName("DATE_ISSUED")
+        @ColumnName("PAYER_DOC_ISSUED")
         var dateIssued: Timestamp? = null,
 
-        @ColumnName("BY_ISSUED")
+        @ColumnName("PAYER_DOC_BY_ISSUED")
         var byIssued: String = "",
 
-        @ColumnName("CODE_DEPARTMENT")
+        @ColumnName("PAYER_DOC_CODE_DEPARTMENT")
         var departmentCode: String = "",
 
         @ColumnName("PAYEE_PACT")
@@ -89,33 +101,47 @@ data class CashPay(
         @ColumnName("PAYEE_KPP")
         var payeeKpp: String = "",
 
-        @ColumnName("PAYEE_BANK_BIK")
+        @ColumnName("PAYEE_BIK")
         var payeeBik: String = "",
+
+        @ColumnName("PAYEE_BANK_ID")
+        var payeeBankId: Long? = null,
 
         @ColumnName("PAYEE_BANK_NAME")
         var payeeBankName: String = "",
 
-        @ColumnName("PAYEE_ACCOUNT")
+        @ColumnName("PAYEE_ACCOUNT_CODE")
         var payeeAccount: String = "",
 
-        @ColumnName("DETAIL_ACCOUNT")
+        @ColumnName("PERSONAL_ACCOUNT_PAY")
         var detailAccount: String = "",
 
-        @ColumnName("DETAIL_PERIOD")
+        @ColumnName("PERIOD_PAY")
         var detailPeriod: String = "",
 
-        @ColumnName("DETAIL_TARGET")
+        @ColumnName("TARGET_PAY")
+        var detailTargetId: Long? = null,
+
+        @ColumnName("TARGET_PAY_INFO")
         var detailTarget: String = "",
 
-        @ColumnName("COMMISION_AMOUNT")
+        @ColumnName("COMMIS_AMOUNT")
         var commisionAmount: Double = 0.0,
 
-        @ColumnName("COMMISION_ACCOUNT")
+        @ColumnName("COMMIS_ACCOUNT")
         var commisionAccount: String = "",
 
-        @ColumnName("COMMISION_TYPE")
-        var commisionType: Long = 0
+        @ColumnName("COMMIS_TYPE")
+        var commisionType: Long? = null
 ) {
+        var stateName: String
+        get() = when(state) {
+                0L -> "Новый"
+                else -> "хз"
+        }
+        set(_) {}
+
+
         override fun toString(): String = "amount=$amount payerFio=$payerFio payeeName=$payeeName payeeInn=$payeeInn " +
                 "payeeKpp=$payeeKpp payeeBik=$payeeBik payeeAccount=$payeeAccount detailAccount=$detailAccount detailPeriod=$detailPeriod descriptionPay=$descriptionPay"
 }

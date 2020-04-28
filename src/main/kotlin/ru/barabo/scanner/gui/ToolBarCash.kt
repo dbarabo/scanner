@@ -5,7 +5,6 @@ import ru.barabo.gui.swing.toolButton
 import ru.barabo.scanner.service.CashPayService
 import ru.barabo.scanner.service.ScannerDispatcher
 import javax.swing.JTextArea
-import javax.swing.JTextField
 import javax.swing.JToolBar
 
 class ToolBarCash : JToolBar() {
@@ -27,8 +26,12 @@ class ToolBarCash : JToolBar() {
             this.focusTraversalPolicy
         }
 
+        toolButton("newFile24", "Новый платеж") {
+            CashPayService.newPay()
+        }
+
         toolButton("save24", "Сохранить") {
-            CashPayService.saved()
+            CashPayService.savePay()
         }
 
        add(scannerText)

@@ -1,7 +1,11 @@
 package ru.barabo.gui.swing
 
+import org.jdesktop.swingx.JXDatePicker
 import org.slf4j.LoggerFactory
-import java.awt.*
+import java.awt.Container
+import java.awt.GridBagConstraints
+import java.awt.GridBagLayout
+import java.awt.Insets
 import java.io.File
 import java.text.NumberFormat
 import java.util.*
@@ -43,7 +47,7 @@ fun <T> Container.comboBox(label: String, gridY: Int, list: List<T>? = null, gri
     return combo
 }
 
-fun <T> Container.comboBoxWithItems(label: String, gridY: Int, list: List<T>? = null, gridX: Int = 0): Pair<JComboBox<T>, Vector<T>?> {
+fun <T> Container.comboBoxWithItems(label: String, gridY: Int, list: List<T>? = null, gridX: Int = 0, width: Int = 1): Pair<JComboBox<T>, Vector<T>?> {
 
     add( JLabel(label), labelConstraint(gridY, gridX) )
 
@@ -51,7 +55,7 @@ fun <T> Container.comboBoxWithItems(label: String, gridY: Int, list: List<T>? = 
 
     val combo = items?.let { JComboBox(it) } ?: JComboBox()
 
-    add(combo, textConstraint(gridY = gridY, gridX = gridX + 1) )
+    add(combo, textConstraint(gridY = gridY, gridX = gridX + 1, width = width) )
 
     return Pair(combo, items)
 }
@@ -76,6 +80,17 @@ fun Container.textFieldHorizontal(label: String, gridY: Int, gridX: Int = 0, wid
     }
 }
 
+fun Container.datePicker(label: String, gridY: Int, gridX: Int = 0, width: Int = 1): JXDatePicker {
+
+    add( JLabel(label), labelConstraint(gridY, gridX) )
+
+    val datePicker = JXDatePicker()
+
+    this.add(datePicker, textConstraint(gridY = gridY, gridX = gridX + 1, width = width) )
+
+    return datePicker
+}
+
 fun Container.textArea(label: String, gridY: Int, height: Int = 2): JTextArea {
 
     add( JLabel(label), labelConstraint(gridY) )
@@ -90,7 +105,7 @@ fun Container.textArea(label: String, gridY: Int, height: Int = 2): JTextArea {
     }
 }
 
-fun Container.textAreaHorizontal(label: String, gridY: Int, height: Int = 2): JTextArea {
+fun Container.textAreaHorizontal(label: String, gridY: Int, height: Int = 2, width: Int = 1): JTextArea {
 
     add( JLabel(label), labelConstraint(gridY) )
 
@@ -100,7 +115,7 @@ fun Container.textAreaHorizontal(label: String, gridY: Int, height: Int = 2): JT
 
         this.isEditable = false
 
-        this@textAreaHorizontal.add(this, textConstraint(gridY, height, 1) )
+        this@textAreaHorizontal.add(this, textConstraint(gridY, height, 1, width) )
     }
 }
 
