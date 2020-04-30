@@ -5,6 +5,7 @@ import ru.barabo.db.annotation.*
 import java.sql.Timestamp
 
 @SelectQuery("select * from dual where 1 = 0")
+@TableName("OD.PTKB_CASH_PAY")
 data class CashPay(
         @ColumnName("ID")
         @SequenceName(SEQ_CLASSIFIED)
@@ -16,6 +17,7 @@ data class CashPay(
         var idAfinaDoc: Long? = null,
 
         @ColumnName("STATE")
+        @ColumnType(java.sql.Types.BIGINT)
         var state: Long = 0L,
 
         @ColumnName("DOC_NUMBER")
@@ -26,7 +28,6 @@ data class CashPay(
         var cashAccount: String = "",
 
         @ColumnName("CASH_ACCOUNT")
-        @ReadOnly
         var cashAccountId: Long? = null,
 
         @ColumnName("PAY_ACCOUNT")
@@ -51,24 +52,29 @@ data class CashPay(
         var payerFio: String = "",
 
         @ColumnName("PAYER_CLIENT")
+        @ColumnType(java.sql.Types.BIGINT)
         var payerId: Long? = null,
 
         @ColumnName("IS_RESIDENT")
         var isResident: Long = 1L,
 
         @ColumnName("PAYER_REGION_ID")
+        @ColumnType(java.sql.Types.BIGINT)
         var regionId: Long? = null,
 
         @ColumnName("REGION")
+        @ReadOnly
         var region: String = "",
 
         @ColumnName("PAYER_BIRTH_PLACE")
         var birthPlace: String = "",
 
         @ColumnName("PAYER_BIRTH_DATE")
+        @ColumnType(java.sql.Types.TIMESTAMP)
         var birthDate: Timestamp? = null,
 
         @ColumnName("PAYER_DOC_TYPE")
+        @ColumnType(java.sql.Types.BIGINT)
         var typePasport: Long? = null,
 
         @ColumnName("PAYER_DOC_LINE")
@@ -78,6 +84,7 @@ data class CashPay(
         var numberPasport: String = "",
 
         @ColumnName("PAYER_DOC_ISSUED")
+        @ColumnType(java.sql.Types.TIMESTAMP)
         var dateIssued: Timestamp? = null,
 
         @ColumnName("PAYER_DOC_BY_ISSUED")
@@ -86,10 +93,12 @@ data class CashPay(
         @ColumnName("PAYER_DOC_CODE_DEPARTMENT")
         var departmentCode: String = "",
 
-        @ColumnName("PAYEE_PACT")
-        var payeePactId: Long = 0,
+        @ColumnName("PHYS_PACT_ID")
+        @ReadOnly
+        var payeePactId: Long? = null,
 
         @ColumnName("PAYEE_ID")
+        @ColumnType(java.sql.Types.BIGINT)
         var payeeId: Long? = null,
 
         @ColumnName("PAYEE_NAME")
@@ -105,9 +114,11 @@ data class CashPay(
         var payeeBik: String = "",
 
         @ColumnName("PAYEE_BANK_ID")
+        @ColumnType(java.sql.Types.BIGINT)
         var payeeBankId: Long? = null,
 
         @ColumnName("PAYEE_BANK_NAME")
+        @ReadOnly
         var payeeBankName: String = "",
 
         @ColumnName("PAYEE_ACCOUNT_CODE")
@@ -120,9 +131,11 @@ data class CashPay(
         var detailPeriod: String = "",
 
         @ColumnName("TARGET_PAY")
+        @ColumnType(java.sql.Types.BIGINT)
         var detailTargetId: Long? = null,
 
         @ColumnName("TARGET_PAY_INFO")
+        @ReadOnly
         var detailTarget: String = "",
 
         @ColumnName("COMMIS_AMOUNT")
@@ -132,6 +145,7 @@ data class CashPay(
         var commisionAccount: String = "",
 
         @ColumnName("COMMIS_TYPE")
+        @ColumnType(java.sql.Types.BIGINT)
         var commisionType: Long? = null
 ) {
         var stateName: String

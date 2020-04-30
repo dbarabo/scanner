@@ -12,7 +12,10 @@ data class UserDepartment(val userName: String?,
                           val departmentId: Long? = null,
                           val accountCode: String = "",
                           val accountId: Long? = null
-)
+) {
+    override fun toString(): String = "userName=$userName\ndepartmentName=$departmentName\nworkPlace=$workPlace\naccessMode=$accessMode\n" +
+    "userId=$userId\nworkPlaceId=$workPlaceId\ndepartmentId=$departmentId\naccountCode=$accountCode\naccountId=$accountId"
+}
 
 enum class AccessMode {
     None,

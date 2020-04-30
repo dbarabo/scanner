@@ -2,6 +2,7 @@ package ru.barabo.scanner.service
 
 import org.apache.log4j.Logger
 import ru.barabo.afina.AfinaOrm
+import ru.barabo.afina.AfinaQuery
 import ru.barabo.db.EditType
 import ru.barabo.db.service.StoreFilterService
 import ru.barabo.gui.swing.processShowError
@@ -41,7 +42,9 @@ object CashPayService : StoreFilterService<CashPay>(AfinaOrm, CashPay::class.jav
     fun savePay() {
         val entity = selectedEntity() ?: throw Exception("Не найден платеж для сохранения")
 
+        entity.cashAccountId = AfinaQuery.getUserDepartment().accountId
 
+        save(entity)
     }
 
     private fun infoToCashPay(): CashPay {
