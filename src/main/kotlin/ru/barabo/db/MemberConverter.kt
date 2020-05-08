@@ -57,15 +57,6 @@ internal data class MemberConverter(private val member: KMutableProperty<*>,
         }
     }
 
-    private fun getIdSqlValueFromEntity(subEntityItem: Any): Any? {
-
-        val subMember = getIdMember(subEntityItem::class.java) ?: return null
-
-        val javaValue = subMember.getter.call(subEntityItem) ?: return null
-
-        return subMember.javaValueToSql(javaValue)
-    }
-
     private fun sqlValueToJava(newObject: Any, sqlValue: Any, row: Array<Any?>? = null, columnNames: Array<String>? = null): Any? {
 
         return when {
@@ -473,4 +464,13 @@ internal fun getSqlParamsFromEntity(entity: Any, memberColumns: Collection<Membe
     }
 
     return params
+}
+
+internal fun getIdSqlValueFromEntity(subEntityItem: Any): Any? {
+
+    val subMember = getIdMember(subEntityItem::class.java) ?: return null
+
+    val javaValue = subMember.getter.call(subEntityItem) ?: return null
+
+    return subMember.javaValueToSql(javaValue)
 }

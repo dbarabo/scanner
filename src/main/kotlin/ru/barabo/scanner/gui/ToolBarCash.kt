@@ -1,6 +1,7 @@
 package ru.barabo.scanner.gui
 
 import ru.barabo.gui.swing.onOffButton
+import ru.barabo.gui.swing.processShowError
 import ru.barabo.gui.swing.toolButton
 import ru.barabo.scanner.service.CashPayService
 import ru.barabo.scanner.service.ScannerDispatcher
@@ -31,7 +32,9 @@ class ToolBarCash : JToolBar() {
         }
 
         toolButton("save24", "Сохранить") {
-            CashPayService.savePay()
+            processShowError {
+                CashPayService.savePay()
+            }
         }
 
        add(scannerText)

@@ -1,19 +1,29 @@
 package ru.barabo.scanner.service
 
+import oracle.jdbc.OracleTypes
 import org.apache.log4j.Logger
 import ru.barabo.afina.AfinaOrm
 import ru.barabo.afina.AfinaQuery
 import ru.barabo.db.EditType
+import ru.barabo.db.annotation.QuerySelect
 import ru.barabo.db.service.StoreFilterService
 import ru.barabo.gui.swing.processShowError
 import ru.barabo.scanner.entity.CashPay
 import java.awt.im.InputContext
 
-object CashPayService : StoreFilterService<CashPay>(AfinaOrm, CashPay::class.java), ScanEventListener {
+object CashPayService : StoreFilterService<CashPay>(AfinaOrm, CashPay::class.java), QuerySelect, ScanEventListener {
 
     private val logger = Logger.getLogger(CashPayService::class.simpleName)!!
 
     private val scannerInfo: MutableMap<String, String> = LinkedHashMap()
+
+    override fun selectQuery(): String = "{ ? = call od.PTKB_CASH.getCashPayList }"
+
+    override fun processInsert(item: CashPay) {}
+
+    override fun callBackSelectData(item: CashPay) {
+        synchronized(dataList) { dataList.add(item) }
+    }
 
     override fun scanInfo(info: Map<String, String>) {
 
@@ -45,6 +55,13 @@ object CashPayService : StoreFilterService<CashPay>(AfinaOrm, CashPay::class.jav
         entity.cashAccountId = AfinaQuery.getUserDepartment().accountId
 
         save(entity)
+
+        val afinaId = AfinaQuery.execute(EXEC_SAVE_CASH_PAY, arrayOf<Any?>(entity.id),
+                intArrayOf(OracleTypes.NUMBER))?.get(0) ?: throw Exception("afinaId is not found for call $EXEC_SAVE_CASH_PAY")
+
+        entity.idAfinaDoc = (afinaId as Number).toLong()
+
+        reselectRow()
     }
 
     private fun infoToCashPay(): CashPay {
@@ -83,6 +100,8 @@ object CashPayService : StoreFilterService<CashPay>(AfinaOrm, CashPay::class.jav
             setSelectedEntity(this)
         }
     }
+
+    private const val EXEC_SAVE_CASH_PAY = "{ call od.PTKB_CASH.processCashPay(?, ?) }"
 
     private const val ERROR_LANG_IS_NOT_RUS = "при сканировании нужно включить русский язык :("
 }

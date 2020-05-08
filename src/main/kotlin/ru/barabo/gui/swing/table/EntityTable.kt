@@ -77,10 +77,17 @@ open class EntityTable<T: Any>(private val columns: List<ColumnTableModel<T, *>>
             tableModel.fireTableStructureChanged()
             setColumnsSize(columns)
 
+            if(store.dataListCount() > 0) {
+                selectionModel.setSelectionInterval(store.selectedRowIndex, store.selectedRowIndex)
+            }
+
             return
         }
 
         tableModel.fireTableDataChanged()
+        if(store.dataListCount() > 0) {
+            selectionModel.setSelectionInterval(store.selectedRowIndex, store.selectedRowIndex)
+        }
     }
 
     override fun getColumnClass(column: Int): Class<*>  = model.getColumnClass(column)

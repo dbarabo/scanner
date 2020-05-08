@@ -7,11 +7,11 @@ import java.io.*
 import java.sql.*
 import java.util.concurrent.atomic.AtomicLong
 
+private val logger = Logger.getLogger(Query::class.simpleName)!!
+
 open class Query (protected val dbConnection :DbConnection) {
 
     companion object {
-        private val logger = Logger.getLogger(Query::class.simpleName)!!
-
         private const val ERROR_STATEMENT_NULL = "statement is null"
 
         private const val ERROR_RESULTSET_NULL = "ResultSet is null"
@@ -536,6 +536,9 @@ fun PreparedStatement.setParams(inParams :Array<Any?>? = null, shiftOutParams: I
     if(inParams == null) {
         return null
     }
+
+    inParams?.forEach { logger.error("inParams=$it") }
+
 
     var fileInputStream: InputStream? = null
 

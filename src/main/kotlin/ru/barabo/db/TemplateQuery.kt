@@ -99,16 +99,18 @@ open class TemplateQuery (private val query :Query) {
         (row.newInstance() as ParamsSelect).selectParams() } else null
 
     @Throws(SessionException::class)
-    fun <T> selectById(row :Class<T>, idValue: T, callBack :(row :T)->Unit) {
+    fun <T: Any> selectById(row :Class<T>, idValue: T, callBack :(row :T)->Unit) {
 
-        val idColumn = getIdColumnName(row) ?: return
+        val idColumn = getIdName(idValue) ?: throw SessionException("Не найден ID")
+
+        val idField = getFieldData(idValue, idColumn) ?: return
 
         val selectQuery =  getSelect(row).addWhereIdToSelect(idColumn)
 
         val params = selectParams(row)
 
         val list = ArrayList<Any?>()
-        list += idValue
+        list += idField.second
 
         params?.let { list.addAll(it) }
 

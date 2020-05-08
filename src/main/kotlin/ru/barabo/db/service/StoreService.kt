@@ -1,10 +1,7 @@
 package ru.barabo.db.service
 
-import ru.barabo.db.EditType
+import ru.barabo.db.*
 import ru.barabo.db.EditType.*
-import ru.barabo.db.SessionException
-import ru.barabo.db.SessionSetting
-import ru.barabo.db.TemplateQuery
 import ru.barabo.db.annotation.ParamsSelect
 import ru.barabo.db.annotation.QuerySelect
 import java.awt.EventQueue
@@ -32,17 +29,30 @@ abstract class StoreService<T: Any, out G>(protected val orm: TemplateQuery, val
 
     protected open fun processDelete(item: T) {}
 
-    protected open fun processInsert(item: T) {}
+    protected open fun processInsert(item: T) {
+        synchronized(dataList) { dataList.add(item) }
+    }
 
     protected open fun processUpdate(item: T) {}
 
     protected open fun afterSelectInit() {}
 
-    protected fun callBackSelectData(item: T) {
-
-        synchronized(dataList) { dataList.add(item) }
+    protected open fun callBackSelectData(item: T) {
 
         processInsert(item)
+    }
+
+    protected fun callBackReselectById(item: T) {
+
+        val member = getIdMember(item.javaClass) ?: return
+
+        val idFindValue = member.getter.call(item)
+
+        val indexData = dataList.indexOfFirst { member.getter.call(it) == idFindValue }.takeIf { it > -1 } ?: return
+
+        synchronized(dataList) { dataList[indexData] = item }
+
+        processUpdate(item)
     }
 
     fun addListener(listener : StoreListener<G>) {
@@ -104,8 +114,6 @@ abstract class StoreService<T: Any, out G>(protected val orm: TemplateQuery, val
 
         when (type) {
             INSERT -> {
-                dataList.add(item)
-
                 processInsert(item)
             }
             EDIT -> {

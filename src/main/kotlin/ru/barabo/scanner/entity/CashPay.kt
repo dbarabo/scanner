@@ -3,8 +3,11 @@ package ru.barabo.scanner.entity
 import ru.barabo.afina.SEQ_CLASSIFIED
 import ru.barabo.db.annotation.*
 import java.sql.Timestamp
+import java.text.DecimalFormat
 
-@SelectQuery("select * from dual where 1 = 0")
+@SelectQuery("""
+select cp.*, od.PTKB_CASH.getClientLabel(cp.PAYEE_BANK_ID) PAYEE_BANK_NAME, od.accountCode(cp.cash_account) CASH_ACCOUNT_CODE    
+from od.PTKB_CASH_PAY cp """)
 @TableName("OD.PTKB_CASH_PAY")
 data class CashPay(
         @ColumnName("ID")
@@ -155,7 +158,13 @@ data class CashPay(
         }
         set(_) {}
 
+        var amountFormat: String
+        get() = amount.formatedCurrency()
+        set(_) {}
+
 
         override fun toString(): String = "amount=$amount payerFio=$payerFio payeeName=$payeeName payeeInn=$payeeInn " +
                 "payeeKpp=$payeeKpp payeeBik=$payeeBik payeeAccount=$payeeAccount detailAccount=$detailAccount detailPeriod=$detailPeriod descriptionPay=$descriptionPay"
 }
+
+private fun Number?.formatedCurrency() = this?.let { DecimalFormat("0.00").format(it) } ?: ""

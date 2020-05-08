@@ -31,9 +31,9 @@ open class StoreFilterService<T: Any>(orm: TemplateQuery, clazz: Class<T>) : Sto
 
         val idRow = selectedEntity() ?: return
 
-        orm.selectById(clazz, idRow, ::callBackSelectData)
+        orm.selectById(clazz, idRow, ::callBackReselectById)
 
-        sentRefreshAllListener(EditType.CHANGE_CURSOR)
+        sentRefreshAllListener(EditType.EDIT)
     }
 
     private fun callBackSelectRow(item: T) {
