@@ -22,7 +22,7 @@ object CashPayService : StoreFilterService<CashPay>(AfinaOrm, CashPay::class.jav
     override fun processInsert(item: CashPay) {}
 
     override fun callBackSelectData(item: CashPay) {
-        synchronized(dataList) { dataList.add(item) }
+        super.processInsert(item)
     }
 
     override fun scanInfo(info: Map<String, String>) {
