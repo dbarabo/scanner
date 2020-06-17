@@ -6,9 +6,11 @@ import ru.barabo.db.EditType
 import ru.barabo.db.service.StoreListener
 import ru.barabo.gui.swing.*
 import ru.barabo.scanner.entity.CashPay
+import ru.barabo.scanner.entity.PactDepartment
 import ru.barabo.scanner.entity.PasportType
 import ru.barabo.scanner.service.CashPayService
 import ru.barabo.scanner.service.ClientPhysicService
+import ru.barabo.scanner.service.PactDepartmentService
 import ru.barabo.scanner.service.PasportTypeService
 import java.awt.Component
 import java.awt.Container
@@ -29,6 +31,8 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>> {
     private val assignerProps = ArrayList<AssignerProp<CashPay>>()
 
     private val pasportTypeCombo: JComboBox<PasportType>
+
+    private val pactCombo: JComboBox<PactDepartment>
 
     init {
         layout = GridBagLayout()
@@ -138,7 +142,7 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>> {
             }
         }
 
-        groupPanel("Получатель", 12, 3, 0).apply {
+        groupPanel("Получатель", 12, 4, 0).apply {
             textFieldHorizontal("Наименование", 0, 0, 3).apply {
                 assignerProps += AssignerProp(this, CashPay::payeeName, CashPayService::selectedEntity,
                         this::setText, { this.text } )
@@ -153,9 +157,16 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>> {
                 assignerProps += AssignerProp(this, CashPay::payeeKpp, CashPayService::selectedEntity,
                         this::setText, { this.text } )
             }
+
+            comboBox("Договор", 2, PactDepartmentService.elemRoot(), 0).apply {
+
+                pactCombo = this
+
+                addActionListener { setSelectedPactCombo( selectedIndex ) }
+            }
         }
 
-        groupPanel("Реквизиты получателя", 15, 4, 0).apply {
+        groupPanel("Реквизиты получателя", 16, 4, 0).apply {
             textFieldHorizontal("р/счет", 0).apply {
                 assignerProps += AssignerProp(this, CashPay::payeeAccount, CashPayService::selectedEntity,
                         this::setText, { this.text } )
@@ -172,7 +183,7 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>> {
             }
         }
 
-        maxSpaceYConstraint(19)
+        maxSpaceYConstraint(20)
 
         setEnabledAll(false)
 
@@ -187,6 +198,8 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>> {
         assignerProps.forEach { it.valueFromProp() }
 
         pasportTypeCombo.selectedIndex = PasportTypeService.selectedRowIndex
+
+        pactCombo.selectedIndex = PactDepartmentService.selectedRowIndex
     }
 
     private fun setSelectedPayerCombo( comboIndex: Int ) {
@@ -220,6 +233,21 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>> {
         cashPay.isResident = pasportType.isResident ?: cashPay.isResident
     }
 
+    private fun setSelectedPactCombo( comboIndex: Int ) {
+        if(comboIndex < 0) return
+
+        val oldSelectedEntity = PactDepartmentService.selectedRowIndex
+        PactDepartmentService.selectedRowIndex = comboIndex
+
+        if(oldSelectedEntity == PactDepartmentService.selectedRowIndex) return
+
+        val pact = PactDepartmentService.selectedEntity() ?: return
+
+        val cashPay = CashPayService.selectedEntity() ?: return
+
+        cashPay.payeePactId = pact.id
+        cashPay.payeePactName = pact.label
+    }
 
 }
 
