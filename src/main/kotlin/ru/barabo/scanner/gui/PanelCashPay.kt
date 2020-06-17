@@ -6,25 +6,29 @@ import ru.barabo.db.EditType
 import ru.barabo.db.service.StoreListener
 import ru.barabo.gui.swing.*
 import ru.barabo.scanner.entity.CashPay
+import ru.barabo.scanner.entity.PasportType
 import ru.barabo.scanner.service.CashPayService
 import ru.barabo.scanner.service.ClientPhysicService
 import ru.barabo.scanner.service.PasportTypeService
-import ru.barabo.scanner.service.ScannerDispatcher
 import java.awt.Component
+import java.awt.Container
 import java.awt.GridBagLayout
 import java.awt.event.FocusEvent
 import java.awt.event.FocusListener
 import java.awt.event.KeyEvent
 import java.awt.event.KeyListener
+import javax.swing.JComboBox
 import javax.swing.JPanel
 import kotlin.reflect.KMutableProperty1
 import kotlin.reflect.jvm.javaType
 
-private val logger = Logger.getLogger(ScannerDispatcher::class.simpleName)!!
+private val logger = Logger.getLogger(PanelCashPay::class.simpleName)!!
 
 class PanelCashPay : JPanel(), StoreListener<List<CashPay>> {
 
     private val assignerProps = ArrayList<AssignerProp<CashPay>>()
+
+    private val pasportTypeCombo: JComboBox<PasportType>
 
     init {
         layout = GridBagLayout()
@@ -89,9 +93,16 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>> {
 
                 assignerProps += AssignerProp(first.editor.editorComponent, CashPay::payerFio, CashPayService::selectedEntity,
                         first::setSelectedItem, { first.selectedItem?.toString() } )
+
+                first.addActionListener { setSelectedPayerCombo( first.selectedIndex ) }
             }
 
-            comboBox("Тип док-та", 1, PasportTypeService.elemRoot())
+            comboBox("Тип док-та", 1, PasportTypeService.elemRoot()).apply {
+
+                pasportTypeCombo = this
+
+                addActionListener { setSelectedPassportTypeCombo( selectedIndex ) }
+            }
 
             textFieldHorizontal("Код подразделения", 1, 2).apply {
                 assignerProps += AssignerProp(this, CashPay::departmentCode, CashPayService::selectedEntity,
@@ -163,6 +174,8 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>> {
 
         maxSpaceYConstraint(19)
 
+        setEnabledAll(false)
+
         CashPayService.addListener(this)
     }
 
@@ -172,7 +185,42 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>> {
 
     private fun fromEntity() {
         assignerProps.forEach { it.valueFromProp() }
+
+        pasportTypeCombo.selectedIndex = PasportTypeService.selectedRowIndex
     }
+
+    private fun setSelectedPayerCombo( comboIndex: Int ) {
+        if(comboIndex < 0) return
+
+        val oldSelectedEntity = ClientPhysicService.selectedRowIndex
+        ClientPhysicService.selectedRowIndex = comboIndex
+
+        if(oldSelectedEntity == ClientPhysicService.selectedRowIndex) return
+
+        val cashPay = CashPayService.selectedEntity() ?: return
+
+        ClientPhysicService.updatePayDocuments(cashPay)
+        fromEntity()
+    }
+
+    private fun setSelectedPassportTypeCombo( comboIndex: Int ) {
+        if(comboIndex < 0) return
+
+        val oldSelectedEntity = PasportTypeService.selectedRowIndex
+        PasportTypeService.selectedRowIndex = comboIndex
+
+        if(oldSelectedEntity == PasportTypeService.selectedRowIndex) return
+
+        val pasportType = PasportTypeService.selectedEntity() ?: return
+
+        val cashPay = CashPayService.selectedEntity() ?: return
+
+        cashPay.pasportTypeName = pasportType.label
+        cashPay.typePasport = pasportType.id
+        cashPay.isResident = pasportType.isResident ?: cashPay.isResident
+    }
+
+
 }
 
 class AssignerProp <E> (component: Component,
@@ -202,12 +250,6 @@ class AssignerProp <E> (component: Component,
 
         val javaType = prop.returnType.javaType as Class<*>
 
-        logger.error("entity=$entity")
-
-        logger.error("value=$value")
-
-        logger.error("javaType=$javaType")
-
         val typeValue = when(javaType) {
             String::class.javaObjectType -> value ?: ""
             else -> {
@@ -218,8 +260,6 @@ class AssignerProp <E> (component: Component,
                 }
             }
         }
-
-        logger.error("typeValue=$typeValue")
 
         (prop as KMutableProperty1<E, Any>).set(entity, typeValue)
     }
@@ -239,9 +279,20 @@ class PropKeyListener<E>(private val assignerProp: AssignerProp<E>) : KeyListene
 class PropFocusListener<E>(private val assignerProp: AssignerProp<E>) : FocusListener {
 
     override fun focusLost(e: FocusEvent?) {
-        logger.error("focusLost=$assignerProp")
         assignerProp.valueToProp()
     }
 
     override fun focusGained(e: FocusEvent?) {}
+}
+
+fun Container.setEnabledAll(isEnabled: Boolean) {
+
+    for(child in this.components) {
+
+        child.isEnabled = isEnabled
+
+        if(child is Container) {
+            child.setEnabledAll(isEnabled)
+        }
+    }
 }

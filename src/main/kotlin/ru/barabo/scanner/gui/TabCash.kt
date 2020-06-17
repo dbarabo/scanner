@@ -11,9 +11,11 @@ class TabCash : JPanel()  {
     init {
         layout = BorderLayout()
 
-        add(ToolBarCash(), BorderLayout.NORTH)
+        val panelCashPay = PanelCashPay()
 
-        val mainHorizontalSplit = JSplitPane(HORIZONTAL_SPLIT, PanelCashPay(), JScrollPane(TableCashPay()) ).apply {
+        add(ToolBarCash(panelCashPay), BorderLayout.NORTH)
+
+        val mainHorizontalSplit = JSplitPane(HORIZONTAL_SPLIT, panelCashPay, JScrollPane(TableCashPay()) ).apply {
             resizeWeight = 0.75
         }
 

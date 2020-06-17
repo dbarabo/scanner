@@ -8,7 +8,7 @@ import ru.barabo.scanner.service.ScannerDispatcher
 import javax.swing.JTextArea
 import javax.swing.JToolBar
 
-class ToolBarCash : JToolBar() {
+class ToolBarCash(panelCashPay: PanelCashPay) : JToolBar() {
 
 
     private val scannerText: JTextArea = JTextArea().apply {
@@ -28,6 +28,8 @@ class ToolBarCash : JToolBar() {
         }
 
         toolButton("newFile24", "Новый платеж") {
+            panelCashPay.setEnabledAll(true)
+
             CashPayService.newPay()
         }
 

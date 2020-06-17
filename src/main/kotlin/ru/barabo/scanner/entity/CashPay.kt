@@ -6,7 +6,8 @@ import java.sql.Timestamp
 import java.text.DecimalFormat
 
 @SelectQuery("""
-select cp.*, od.PTKB_CASH.getClientLabel(cp.PAYEE_BANK_ID) PAYEE_BANK_NAME, od.accountCode(cp.cash_account) CASH_ACCOUNT_CODE    
+select cp.*, od.PTKB_CASH.getClientLabel(cp.PAYEE_BANK_ID) PAYEE_BANK_NAME, od.accountCode(cp.cash_account) CASH_ACCOUNT_CODE,
+   od.PTKB_CASH.getPasportTypeName(cp.PAYER_DOC_TYPE) PASSPORT_NAME
 from od.PTKB_CASH_PAY cp """)
 @TableName("OD.PTKB_CASH_PAY")
 data class CashPay(
@@ -85,6 +86,10 @@ data class CashPay(
 
         @ColumnName("PAYER_DOC_NUMBER")
         var numberPasport: String = "",
+
+        @ColumnName("PASSPORT_NAME")
+        @ReadOnly
+        var pasportTypeName: String? = null,
 
         @ColumnName("PAYER_DOC_ISSUED")
         @ColumnType(java.sql.Types.TIMESTAMP)
