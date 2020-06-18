@@ -11,7 +11,7 @@ private val logger = Logger.getLogger(ClientPhysicService::class.simpleName)!!
 object ClientPhysicService : StoreFilterService<ClientPhysic>(AfinaOrm, ClientPhysic::class.java) {
 
 
-    fun updatePayDocuments(cashPay: CashPay) {
+    fun updatePayDocument(cashPay: CashPay) {
 
         val entity = selectedEntity() ?: return
 

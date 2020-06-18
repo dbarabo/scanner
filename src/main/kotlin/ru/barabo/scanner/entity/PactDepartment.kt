@@ -9,7 +9,42 @@ data class PactDepartment(
         var id: Long? = null,
 
         @ColumnName("LABEL")
-        var label: String = ""
+        var label: String? = null,
+
+        @ColumnName("IS_NO_PACT")
+        var isNoPact: Long? = null,
+
+        @ColumnName("PAY_ACCOUNT_ID")
+        var payAccountId: Long? = null,
+
+        @ColumnName("PAY_ACCOUNT")
+        var payAccount: String? = null,
+
+        @ColumnName("PAYEE_ACCOUNT_CODE")
+        var payeeAccount: String? = null,
+
+        @ColumnName("PAYEE_BANK_ID")
+        var payeeBankId: Long? = null,
+
+        @ColumnName("PAYEE_BIK")
+        var payeeBik: String? = null,
+
+        @ColumnName("PAYEE_BANK_NAME")
+        var payeeBankName: String? = null,
+
+        @ColumnName("PAYEE_NAME")
+        var payeeName: String? = null,
+
+        @ColumnName("PAYEE_INN")
+        var payeeInn: String? = null,
+
+        @ColumnName("PAYEE_KPP")
+        var payeeKpp: String? = null,
+
+        @ColumnName("DESCRIPTION")
+        var description: String? = null
 ) {
-    override fun toString(): String = label
+    val isPayWithOutPact: Boolean  get() = (isNoPact != 0L)
+
+    override fun toString(): String = label ?: ""
 }

@@ -3,6 +3,7 @@ package ru.barabo.scanner.gui
 import org.apache.log4j.Logger
 import org.jdesktop.swingx.autocomplete.AutoCompleteDecorator
 import ru.barabo.db.EditType
+import ru.barabo.db.service.StoreFilterService
 import ru.barabo.db.service.StoreListener
 import ru.barabo.gui.swing.*
 import ru.barabo.scanner.entity.CashPay
@@ -158,9 +159,11 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>> {
                         this::setText, { this.text } )
             }
 
-            comboBox("Договор", 2, PactDepartmentService.elemRoot(), 0).apply {
+            comboBox("Договор", 2, PactDepartmentService.elemRoot(), 0, 3).apply {
 
                 pactCombo = this
+
+                maximumRowCount = 20
 
                 addActionListener { setSelectedPactCombo( selectedIndex ) }
             }
@@ -203,52 +206,47 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>> {
     }
 
     private fun setSelectedPayerCombo( comboIndex: Int ) {
-        if(comboIndex < 0) return
-
-        val oldSelectedEntity = ClientPhysicService.selectedRowIndex
-        ClientPhysicService.selectedRowIndex = comboIndex
-
-        if(oldSelectedEntity == ClientPhysicService.selectedRowIndex) return
 
         val cashPay = CashPayService.selectedEntity() ?: return
 
-        ClientPhysicService.updatePayDocuments(cashPay)
+        ClientPhysicService.setSelectedNewIndex(comboIndex) ?: return
+        ClientPhysicService.updatePayDocument(cashPay)
+        fromEntity()
+    }
+
+    private fun setSelectedPactCombo( comboIndex: Int ) {
+
+        val cashPay = CashPayService.selectedEntity() ?: return
+
+        val oldPact = PactDepartmentService.selectedEntity()
+
+        PactDepartmentService.setSelectedNewIndex(comboIndex) ?: return
+
+        PactDepartmentService.updatePayDocument(oldPact, cashPay)
         fromEntity()
     }
 
     private fun setSelectedPassportTypeCombo( comboIndex: Int ) {
-        if(comboIndex < 0) return
-
-        val oldSelectedEntity = PasportTypeService.selectedRowIndex
-        PasportTypeService.selectedRowIndex = comboIndex
-
-        if(oldSelectedEntity == PasportTypeService.selectedRowIndex) return
-
-        val pasportType = PasportTypeService.selectedEntity() ?: return
 
         val cashPay = CashPayService.selectedEntity() ?: return
+
+        val pasportType = PasportTypeService.setSelectedNewIndex(comboIndex) ?: return
 
         cashPay.pasportTypeName = pasportType.label
         cashPay.typePasport = pasportType.id
         cashPay.isResident = pasportType.isResident ?: cashPay.isResident
     }
+}
 
-    private fun setSelectedPactCombo( comboIndex: Int ) {
-        if(comboIndex < 0) return
+private fun <T: Any> StoreFilterService<T>.setSelectedNewIndex(newIndex: Int): T? {
+    if(newIndex < 0) return null
 
-        val oldSelectedEntity = PactDepartmentService.selectedRowIndex
-        PactDepartmentService.selectedRowIndex = comboIndex
+    val oldSelectedEntity = this.selectedRowIndex
+    this.selectedRowIndex = newIndex
 
-        if(oldSelectedEntity == PactDepartmentService.selectedRowIndex) return
+    if(oldSelectedEntity == this.selectedRowIndex) return null
 
-        val pact = PactDepartmentService.selectedEntity() ?: return
-
-        val cashPay = CashPayService.selectedEntity() ?: return
-
-        cashPay.payeePactId = pact.id
-        cashPay.payeePactName = pact.label
-    }
-
+    return this.selectedEntity()
 }
 
 class AssignerProp <E> (component: Component,

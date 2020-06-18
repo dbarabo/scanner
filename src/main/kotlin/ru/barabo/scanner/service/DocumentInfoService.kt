@@ -13,7 +13,7 @@ object DocumentInfoService : StoreFilterService<DocumentInfo>(AfinaOrm, Document
 
     private var clientId: Long? = null
 
-    override fun selectParams(): Array<Any?>? = arrayOf<Any?>(clientId)
+    override fun selectParams(): Array<Any?>? = arrayOf(clientId)
 
     fun reselectDocumentInfo(idClient: Long) {
         clientId = idClient
