@@ -195,6 +195,10 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>> {
 
     override fun refreshAll(elemRoot: List<CashPay>, refreshType: EditType) {
         fromEntity()
+
+        val isEditable = CashPayService.selectedEntity()?.state == 0L
+
+        setEnabledAll(isEditable)
     }
 
     private fun fromEntity() {

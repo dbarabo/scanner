@@ -1,17 +1,16 @@
 package ru.barabo.scanner.service
 
 import ru.barabo.afina.AfinaOrm
+import ru.barabo.db.EditType
 import ru.barabo.db.service.StoreFilterService
+import ru.barabo.db.service.StoreListener
 import ru.barabo.scanner.entity.CashPay
 import ru.barabo.scanner.entity.PactDepartment
 
-object PactDepartmentService :  StoreFilterService<PactDepartment>(AfinaOrm, PactDepartment::class.java) {
+object PactDepartmentService :  StoreFilterService<PactDepartment>(AfinaOrm, PactDepartment::class.java), StoreListener<List<CashPay>> {
 
-    fun setSelectEntityById(id: Long) {
-
-        val withIndex = dataList.withIndex().firstOrNull { it.value.id == id } ?: return
-
-        selectedRowIndex = withIndex.index
+    init {
+        CashPayService.addFirstListener(this)
     }
 
     fun updatePayDocument(oldPact: PactDepartment?, cashPay: CashPay) {
@@ -40,6 +39,19 @@ object PactDepartmentService :  StoreFilterService<PactDepartment>(AfinaOrm, Pac
         cashPay.payeeKpp = pact.setCheckPack(oldPact, cashPay.payeeKpp, pact.payeeKpp)
 
         cashPay.descriptionPay = pact.setCheckPack(oldPact, cashPay.descriptionPay, pact.description)
+    }
+
+    override fun refreshAll(elemRoot: List<CashPay>, refreshType: EditType) {
+        if(refreshType in listOf(EditType.CHANGE_CURSOR, EditType.ALL) ) {
+            CashPayService.selectedEntity()?.payeePactId?.let { setSelectEntityById(it) }
+        }
+    }
+
+    fun setSelectEntityById(id: Long) {
+
+        val withIndex = dataList.withIndex().firstOrNull { it.value.id == id } ?: return
+
+        selectedRowIndex = withIndex.index
     }
 }
 

@@ -102,7 +102,7 @@ data class CashPay(
         var departmentCode: String = "",
 
         @ColumnName("PHYS_PACT_ID")
-        @ReadOnly
+        // @ReadOnly
         var payeePactId: Long? = null,
 
         @ColumnName("PACT_NAME")
@@ -162,7 +162,10 @@ data class CashPay(
 ) {
         var stateName: String
         get() = when(state) {
-                0L -> "Новый"
+                0L -> id?.let { "Создан" } ?: "Новый"
+                1L -> "Исполнен"
+                2L -> "Удален"
+                -1L -> "В кассе"
                 else -> "хз"
         }
         set(_) {}

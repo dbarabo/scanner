@@ -55,6 +55,10 @@ abstract class StoreService<T: Any, out G>(protected val orm: TemplateQuery, val
         processUpdate(item)
     }
 
+    fun addFirstListener(listener : StoreListener<G>) {
+        listenerList.add(0, listener)
+    }
+
     fun addListener(listener : StoreListener<G>) {
         listenerList.add(listener)
 
