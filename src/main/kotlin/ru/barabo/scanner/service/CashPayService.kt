@@ -64,6 +64,14 @@ object CashPayService : StoreFilterService<CashPay>(AfinaOrm, CashPay::class.jav
         reselectRow()
     }
 
+    fun execPay() {
+        val afinaId = selectedEntity()?.idAfinaDoc ?: throw Exception("Платеж не найден, либо еще не создан для исполнения")
+
+        AfinaQuery.execute(EXECUTE_CASH_PAY, arrayOf<Any?>(afinaId) )
+
+        reselectRow()
+    }
+
     private fun infoToCashPay(): CashPay {
         val entity = selectedEntity() ?: createNewEntity()
 
@@ -102,6 +110,8 @@ object CashPayService : StoreFilterService<CashPay>(AfinaOrm, CashPay::class.jav
     }
 
     private const val EXEC_SAVE_CASH_PAY = "{ call od.PTKB_CASH.processCashPay(?, ?) }"
+
+    private const val EXECUTE_CASH_PAY = "{ call od.PTKB_CASH.executeCashPay(?) }"
 
     private const val ERROR_LANG_IS_NOT_RUS = "при сканировании нужно включить русский язык :("
 }
