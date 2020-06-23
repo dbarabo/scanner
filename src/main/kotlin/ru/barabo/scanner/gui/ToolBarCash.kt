@@ -26,6 +26,8 @@ class ToolBarCash(panelCashPay: PanelCashPay) : JToolBar(), StoreListener<List<C
 
         onOffButton("Режим Сканера", true){
             ScannerDispatcher.isEnable = !ScannerDispatcher.isEnable
+
+            scannerText.requestFocus()
         }.apply {
             this.focusTraversalKeysEnabled = false
 
@@ -36,18 +38,22 @@ class ToolBarCash(panelCashPay: PanelCashPay) : JToolBar(), StoreListener<List<C
             panelCashPay.setEnabledAll(true)
 
             CashPayService.newPay()
+
+            scannerText.requestFocus()
         }
 
         toolButton("save24", "Сохранить") {
             processShowError {
                 CashPayService.savePay()
             }
+            scannerText.requestFocus()
         }
 
         toolButton("exec24", "Исполнить") {
             processShowError {
                 CashPayService.execPay()
             }
+            scannerText.requestFocus()
         }.apply {
             execButton = this!!
         }

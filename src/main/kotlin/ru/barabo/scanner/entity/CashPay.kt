@@ -25,6 +25,7 @@ data class CashPay(
         var state: Long = 0L,
 
         @ColumnName("DOC_NUMBER")
+        @ColumnType(java.sql.Types.VARCHAR)
         var numberCashDoc: String = "",
 
         @ColumnName("CASH_ACCOUNT_CODE")
@@ -32,6 +33,7 @@ data class CashPay(
         var cashAccount: String = "",
 
         @ColumnName("CASH_ACCOUNT")
+        @ColumnType(java.sql.Types.BIGINT)
         var cashAccountId: Long? = null,
 
         @ColumnName("PAY_ACCOUNT")
@@ -50,9 +52,11 @@ data class CashPay(
         var cashSymbol2: String = "",
 
         @ColumnName("DESCRIPTION_PAY")
+        @ColumnType(java.sql.Types.VARCHAR)
         var descriptionPay: String = "",
 
         @ColumnName("PAYER_FIO")
+        @ColumnType(java.sql.Types.VARCHAR)
         var payerFio: String = "",
 
         @ColumnName("PAYER_CLIENT")
@@ -71,6 +75,7 @@ data class CashPay(
         var region: String = "",
 
         @ColumnName("PAYER_BIRTH_PLACE")
+        @ColumnType(java.sql.Types.VARCHAR)
         var birthPlace: String = "",
 
         @ColumnName("PAYER_BIRTH_DATE")
@@ -82,9 +87,11 @@ data class CashPay(
         var typePasport: Long? = null,
 
         @ColumnName("PAYER_DOC_LINE")
+        @ColumnType(java.sql.Types.VARCHAR)
         var linePasport: String = "",
 
         @ColumnName("PAYER_DOC_NUMBER")
+        @ColumnType(java.sql.Types.VARCHAR)
         var numberPasport: String = "",
 
         @ColumnName("PASSPORT_NAME")
@@ -96,12 +103,14 @@ data class CashPay(
         var dateIssued: Timestamp? = null,
 
         @ColumnName("PAYER_DOC_BY_ISSUED")
+        @ColumnType(java.sql.Types.VARCHAR)
         var byIssued: String = "",
 
         @ColumnName("PAYER_DOC_CODE_DEPARTMENT")
         var departmentCode: String = "",
 
         @ColumnName("PHYS_PACT_ID")
+        @ColumnType(java.sql.Types.BIGINT)
         // @ReadOnly
         var payeePactId: Long? = null,
 
@@ -114,15 +123,19 @@ data class CashPay(
         var payeeId: Long? = null,
 
         @ColumnName("PAYEE_NAME")
+        @ColumnType(java.sql.Types.VARCHAR)
         var payeeName: String = "",
 
         @ColumnName("PAYEE_INN")
+        @ColumnType(java.sql.Types.VARCHAR)
         var payeeInn: String = "",
 
         @ColumnName("PAYEE_KPP")
+        @ColumnType(java.sql.Types.VARCHAR)
         var payeeKpp: String = "",
 
         @ColumnName("PAYEE_BIK")
+        @ColumnType(java.sql.Types.VARCHAR)
         var payeeBik: String = "",
 
         @ColumnName("PAYEE_BANK_ID")
@@ -134,12 +147,15 @@ data class CashPay(
         var payeeBankName: String = "",
 
         @ColumnName("PAYEE_ACCOUNT_CODE")
+        @ColumnType(java.sql.Types.VARCHAR)
         var payeeAccount: String = "",
 
         @ColumnName("PERSONAL_ACCOUNT_PAY")
+        @ColumnType(java.sql.Types.VARCHAR)
         var detailAccount: String = "",
 
         @ColumnName("PERIOD_PAY")
+        @ColumnType(java.sql.Types.VARCHAR)
         var detailPeriod: String = "",
 
         @ColumnName("TARGET_PAY")
@@ -154,6 +170,7 @@ data class CashPay(
         var commisionAmount: Double = 0.0,
 
         @ColumnName("COMMIS_ACCOUNT")
+        @ColumnType(java.sql.Types.VARCHAR)
         var commisionAccount: String = "",
 
         @ColumnName("COMMIS_TYPE")
