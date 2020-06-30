@@ -65,11 +65,46 @@ object CashPayService : StoreFilterService<CashPay>(AfinaOrm, CashPay::class.jav
     }
 
     fun execPay() {
-        val afinaId = selectedEntity()?.idAfinaDoc ?: throw Exception("Платеж не найден, либо еще не создан для исполнения")
+
+        val entity = selectedEntity() ?: throw Exception("Не найден платеж")
+
+        if(entity.id != null && entity.idAfinaDoc != null) {
+            save(entity)
+        }
+
+        val afinaId = entity.idAfinaDoc ?: throw Exception("Платеж не найден, либо еще не создан для исполнения")
 
         AfinaQuery.execute(EXECUTE_CASH_PAY, arrayOf<Any?>(afinaId) )
 
         reselectRow()
+    }
+
+    fun removePay() {
+        val entity = selectedEntity() ?: throw Exception("Платеж не найден, либо еще не создан для удаления")
+
+        if(entity.id == null && entity.idAfinaDoc == null) {
+            dataList.remove(entity)
+
+            val priorIndex = if(selectedRowIndex > 0 && selectedRowIndex >= dataList.size) dataList.size - 1
+            else selectedRowIndex
+
+            selectedRowIndex = priorIndex
+        } else {
+            AfinaQuery.execute(DELETE_CASH_PAY, arrayOf<Any?>(entity.id?:Long::class.javaObjectType,
+                    entity.idAfinaDoc?:Long::class.javaObjectType) )
+
+            reselectRow()
+        }
+    }
+
+    fun print() {
+        val entity = selectedEntity() ?: throw Exception("Платеж не найден, либо еще не создан")
+
+        if(entity.idAfinaDoc == null) throw Exception("Док-т платежа физ. лиц еще не существует")
+
+        val reportData = if(entity.payeePactCode == "ТАМОЖ") RtfPayCustomHouse(entity.idAfinaDoc!!) else RtfPayKinderGarden(entity.idAfinaDoc!!)
+
+        reportData.buildRtfReport()
     }
 
     private fun infoToCashPay(): CashPay {
@@ -108,6 +143,8 @@ object CashPayService : StoreFilterService<CashPay>(AfinaOrm, CashPay::class.jav
             setSelectedEntity(this)
         }
     }
+
+    private const val DELETE_CASH_PAY = "{ call od.PTKB_CASH.deleteCashPay(?, ?) }"
 
     private const val EXEC_SAVE_CASH_PAY = "{ call od.PTKB_CASH.processCashPay(?, ?) }"
 

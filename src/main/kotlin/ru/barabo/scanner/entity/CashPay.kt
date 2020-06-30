@@ -7,7 +7,8 @@ import java.text.DecimalFormat
 
 @SelectQuery("""
 select cp.*, od.PTKB_CASH.getClientLabel(cp.PAYEE_BANK_ID) PAYEE_BANK_NAME, od.accountCode(cp.cash_account) CASH_ACCOUNT_CODE,
-   od.PTKB_CASH.getPasportTypeName(cp.PAYER_DOC_TYPE) PASSPORT_NAME, od.PTKB_CASH.getPactName(cp.PHYS_PACT_ID) PACT_NAME
+   od.PTKB_CASH.getPasportTypeName(cp.PAYER_DOC_TYPE) PASSPORT_NAME, od.PTKB_CASH.getPactName(cp.PHYS_PACT_ID) PACT_NAME,
+   od.PTKB_CASH.getPactCode(cp.PHYS_PACT_ID) PACT_CODE
 from od.PTKB_CASH_PAY cp """)
 @TableName("OD.PTKB_CASH_PAY")
 data class CashPay(
@@ -111,12 +112,15 @@ data class CashPay(
 
         @ColumnName("PHYS_PACT_ID")
         @ColumnType(java.sql.Types.BIGINT)
-        // @ReadOnly
         var payeePactId: Long? = null,
 
         @ColumnName("PACT_NAME")
         @ReadOnly
         var payeePactName: String? = null,
+
+        @ColumnName("PACT_CODE")
+        @ReadOnly
+        var payeePactCode: String? = null,
 
         @ColumnName("PAYEE_ID")
         @ColumnType(java.sql.Types.BIGINT)

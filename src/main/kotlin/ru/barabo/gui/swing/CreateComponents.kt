@@ -27,7 +27,7 @@ fun Container.maxSpaceYConstraint(gridY: Int): JLabel {
 fun Container.maxSpaceXConstraint(gridX: Int, gridY: Int = 0): JLabel {
     return JLabel("").apply {
         this@maxSpaceXConstraint.add(this,
-            GridBagConstraints(gridX, 0, 1, 1, 1.0, 10.0,
+            GridBagConstraints(gridX, gridY, 1, 1, 1.0, 10.0,
                 GridBagConstraints.PAGE_END, GridBagConstraints.HORIZONTAL,
                 Insets(0, 0, 0, 0), 0, 0)
         )
@@ -212,7 +212,7 @@ fun Container.groupPanel(title: String, gridY: Int, height: Int = 1, gridX: Int 
 }
 
 fun Container.toolButton(icon: String, name: String?, groupIndex: Int? = null,
-                         buttonGroupList: MutableList<ButtonGroup>? = null, action: ()->Unit): AbstractButton? {
+                         buttonGroupList: MutableList<ButtonGroup>? = null, action: ()->Unit): AbstractButton {
 
     val button: AbstractButton = groupIndex?.let {
         JToggleButton( ResourcesManager.getIcon(icon) ).apply { buttonGroupList?.addGroup(this, it) }

@@ -16,6 +16,8 @@ class ToolBarCash(panelCashPay: PanelCashPay) : JToolBar(), StoreListener<List<C
 
     private val execButton: AbstractButton
 
+    private val deleteButton: AbstractButton
+
     private val scannerText: JTextArea = JTextArea().apply {
         rows = 2
         isEditable = true
@@ -55,7 +57,25 @@ class ToolBarCash(panelCashPay: PanelCashPay) : JToolBar(), StoreListener<List<C
             }
             scannerText.requestFocus()
         }.apply {
-            execButton = this!!
+            execButton = this
+        }
+
+        addSeparator()
+
+        toolButton("deleteDB24", "Удалить") {
+            processShowError {
+                CashPayService.removePay()
+            }
+            scannerText.requestFocus()
+        }.apply {
+            deleteButton = this
+        }
+
+        toolButton("print24", "Печать") {
+            processShowError {
+                CashPayService.print()
+            }
+            scannerText.requestFocus()
         }
 
         add(scannerText)

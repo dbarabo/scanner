@@ -45,8 +45,8 @@ class ToolBarReport : JToolBar() {
 
         val access = toolButton("readonly", "Доступы") { showAccess() }
 
-        access?.isEnabled = AfinaQuery.getUserDepartment().accessMode == AccessMode.FullAccess
-        access?.isVisible = access!!.isEnabled
+        access.isEnabled = AfinaQuery.getUserDepartment().accessMode == AccessMode.FullAccess
+        access.isVisible = access.isEnabled
     }
 
     private fun refreshData() {
