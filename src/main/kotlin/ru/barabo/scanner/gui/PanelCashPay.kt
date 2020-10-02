@@ -20,6 +20,7 @@ import java.awt.event.FocusEvent
 import java.awt.event.FocusListener
 import java.awt.event.KeyEvent
 import java.awt.event.KeyListener
+import javax.swing.JCheckBox
 import javax.swing.JComboBox
 import javax.swing.JPanel
 import kotlin.reflect.KMutableProperty1
@@ -35,11 +36,14 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>> {
 
     private val pactCombo: JComboBox<PactDepartment>
 
+    lateinit var isScanOnOff: JCheckBox
+
     init {
         layout = GridBagLayout()
 
         groupPanel("Платеж", 0, 6, 0).apply {
             textFieldHorizontal("№", 0).apply {
+
                 isEditable = false
 
                 assignerProps += AssignerProp(this, CashPay::numberCashDoc, CashPayService::selectedEntity,
@@ -193,10 +197,14 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>> {
         CashPayService.addListener(this)
     }
 
+    fun refreshAllDefault() {
+        refreshAll(emptyList(), EditType.ALL)
+    }
+
     override fun refreshAll(elemRoot: List<CashPay>, refreshType: EditType) {
         fromEntity()
 
-        val isEditable = CashPayService.selectedEntity()?.state == 0L
+        val isEditable = (CashPayService.selectedEntity()?.state == 0L) && (!isScanOnOff.isSelected)
 
         setEnabledAll(isEditable)
     }
@@ -315,14 +323,20 @@ class PropFocusListener<E>(private val assignerProp: AssignerProp<E>) : FocusLis
     override fun focusGained(e: FocusEvent?) {}
 }
 
-fun Container.setEnabledAll(isEnabled: Boolean) {
+private fun Container.setEnabledAll(isEnabl: Boolean) {
+
+    //logger.error("setEnabledAll isEnabled= $isEnabl")
 
     for(child in this.components) {
 
-        child.isEnabled = isEnabled
+        if(child.isEnabled != isEnabl) {
+            child.isEnabled = isEnabl
+        }
 
         if(child is Container) {
-            child.setEnabledAll(isEnabled)
+            child.setEnabledAll(isEnabl)
         }
     }
 }
+
+
