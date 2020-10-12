@@ -121,13 +121,47 @@ object ScannerDispatcher : KeyEventDispatcher {
 
         logger.error("mapInfo =$mapInfo")
 
-        val mapParsedInfo = parseScanCodes(textInfo, mapInfo)
+        val mapFilteredInfo = filteredMap(mapInfo)
+
+        logger.error("mapFilteredInfo =$mapFilteredInfo")
+
+        val mapParsedInfo = parseScanCodes(textInfo, mapFilteredInfo)
 
         logger.error("mapParsedInfo =$mapParsedInfo")
 
         listeners.forEach {
             it.scanInfo(mapParsedInfo)
         }
+    }
+
+    private fun filteredMap(mapInfo: Map<String, String>): Map<String, String> {
+
+        val map = HashMap<String, String>()
+
+        for((key, value) in mapInfo) {
+
+            if(listOf("BIC", "PAYEEINN", "PERSONALACC", "PERSACC", "SUM", "KPP").contains(key)) {
+
+                val filterDigits = parseDigitOnly(value) ?: continue
+
+                if(key == "PAYEEINN" && !(listOf(12, 10).contains(filterDigits.length))) continue
+
+                map[key] = filterDigits
+            } else {
+                map[key] = value
+            }
+        }
+
+        return map
+    }
+
+    private fun parseDigitOnly(value: String): String? {
+        for((index, symbol) in value.withIndex()) {
+            if(!('0'..'9').contains(symbol)){
+                return if(index == 0) null else value.substring(0 until index)
+            }
+        }
+        return value
     }
 
     private fun parseScanCodes(textInfo: String, mapInfo: Map<String, String>): Map<String, String> {
@@ -401,7 +435,9 @@ private fun afterLastStringSymbol(valueTag: String): Int {
 
             return index
         }
-        if(index > 0 && (symbol == 'Ь' || symbol == 'Ж') && (valueTag[index-1] != valueTag[index-1].toUpperCase())) {
+        if(index > 0 && (symbol == 'Ь' || symbol == 'Ж') &&
+                (valueTag[index-1] != valueTag[index-1].toUpperCase() ||
+                        listOf(' ', '.', '"', ',', '\'', '№', '-').contains(valueTag[index-1]) ) ) {
             return index
         }
     }
