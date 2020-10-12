@@ -116,6 +116,8 @@ object CashPayService : StoreFilterService<CashPay>(AfinaOrm, CashPay::class.jav
 
         entity.payeeName = scannerInfo.findPayee().ifEmpty(entity.payeeName)
 
+        entity.payerAddress = scannerInfo.findPayerAddres().ifEmpty(entity.payerAddress)
+
         entity.payeeInn = scannerInfo.findPayeeInn().ifEmpty(entity.payeeInn)
 
         entity.payeeKpp = scannerInfo.findPayeeKpp().ifEmpty(entity.payeeKpp)

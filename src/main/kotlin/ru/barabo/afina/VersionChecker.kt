@@ -2,6 +2,7 @@ package ru.barabo.afina
 
 import java.io.File
 import java.net.InetAddress
+import java.time.LocalTime
 import javax.swing.JOptionPane
 import kotlin.concurrent.thread
 import kotlin.concurrent.timer
@@ -32,6 +33,8 @@ object VersionChecker {
     @JvmStatic
     fun exitCheckVersion() {
 
+        exitWhen22()
+
         updateActualVersion(STATE_EXIT)
 
         timer.cancel()
@@ -50,7 +53,15 @@ object VersionChecker {
         AfinaQuery.execute(UPDATE_VERSION_INFO, params)
     }
 
+    private fun exitWhen22() {
+        if(LocalTime.now().hour >= 22) {
+            exitProcess(0)
+        }
+    }
+
     private fun checkVersionRun() {
+
+        exitWhen22()
 
         val minVersion = AfinaQuery.selectValueType<Number>(SELECT_VERSION) ?: return
 

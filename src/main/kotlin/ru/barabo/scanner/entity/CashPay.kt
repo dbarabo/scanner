@@ -41,6 +41,9 @@ data class CashPay(
         @ReadOnly
         var payAccount: String = "",
 
+        @ColumnName("PAYER_ADDRESS")
+        var payerAddress: String = "",
+
         @ColumnName("AMOUNT")
         var amount: Double = 0.0,
 

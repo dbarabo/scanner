@@ -6,7 +6,6 @@ import ru.barabo.afina.AfinaQuery
 import ru.barabo.afina.UserDepartment
 import ru.barabo.afina.VersionChecker
 import ru.barabo.afina.gui.ModalConnect
-import ru.barabo.db.Query
 import ru.barabo.gui.swing.ResourcesManager
 import ru.barabo.gui.swing.processShowError
 import ru.barabo.report.gui.TabReport

@@ -121,19 +121,21 @@ object ScannerDispatcher : KeyEventDispatcher {
 
         logger.error("mapInfo =$mapInfo")
 
-        //val mapInfo = parseScanCodes(textInfo)
+        val mapParsedInfo = parseScanCodes(textInfo, mapInfo)
+
+        logger.error("mapParsedInfo =$mapParsedInfo")
 
         listeners.forEach {
-            it.scanInfo(mapInfo)
+            it.scanInfo(mapParsedInfo)
         }
     }
 
-    private fun parseScanCodes(textInfo: String): Map<String, String> {
+    private fun parseScanCodes(textInfo: String, mapInfo: Map<String, String>): Map<String, String> {
 
         val tagValues = textInfo.split('=')
         if(tagValues.size < 2) return emptyMap()
 
-        val (data, nextCorrTag)  = parseScanDefaultCodes(tagValues)
+        val (data, nextCorrTag)  = parseScanDefaultCodes(tagValues, mapInfo)
         if(tagValues.size < 7) return data
 
 
@@ -152,10 +154,10 @@ object ScannerDispatcher : KeyEventDispatcher {
             logger.error("CALC value=$nameValue")
 
             if(TAGS.contains(tag)) {
-                data[tag] = nameValue
+                if(data[tag] == null) data[tag] = nameValue
             } else {
                 val parseTagPrepare = prepareParseTag(nameValue, tagTypeValue, tag, data)
-                if(parseTagPrepare != null) {
+                if(parseTagPrepare != null && data[parseTagPrepare] == null) {
                     data[parseTagPrepare] = nameValue
 
                     logger.error("CALC PARSE TAG=$parseTagPrepare")
@@ -245,26 +247,27 @@ object ScannerDispatcher : KeyEventDispatcher {
         return null
     }
 
-    private fun parseScanDefaultCodes(tagValues: List<String>): Pair<HashMap<String, String>, String> {
-        val data = HashMap<String, String>()
+    private fun parseScanDefaultCodes(tagValues: List<String>, mapInfo: Map<String, String>): Pair<HashMap<String, String>, String> {
+        val data = HashMap<String, String>(mapInfo)
         val (nameValue, nextTag) = parseName(tagValues[1])
-        data["NAME"] = nameValue
+
+        if(data["NAME"]  == null) data["NAME"] = nameValue
 
         if(tagValues.size < 3) return Pair(data, "")
         val (account, tagAccount, tagTypeAccount) = parseTagValue(tagValues[2])
-        data["PERSONALACC"] = if(tagTypeAccount == TypeTagValue.DIGIT_ONLY) account else ""
+        if(data["PERSONALACC"]  == null) data["PERSONALACC"] = if(tagTypeAccount == TypeTagValue.DIGIT_ONLY) account else ""
 
         if(tagValues.size < 4) return Pair(data, "")
         val (bankName, tagBankName, tagTypeBankName) = parseTagValue(tagValues[3])
-        data["BANKNAME"] = if(tagTypeBankName != TypeTagValue.DIGIT_ONLY) bankName else ""
+        if(data["BANKNAME"]  == null) data["BANKNAME"] = if(tagTypeBankName != TypeTagValue.DIGIT_ONLY) bankName else ""
 
         if(tagValues.size < 5) return Pair(data, "")
         val (bik, tagBik, tagTypeBik) = parseTagValue(tagValues[4])
-        data["BIC"] = if(tagTypeBik == TypeTagValue.DIGIT_ONLY) bik else ""
+        if(data["BIC"]  == null) data["BIC"] = if(tagTypeBik == TypeTagValue.DIGIT_ONLY) bik else ""
 
         if(tagValues.size < 6) return Pair(data, "")
         val (correspAcc, tagNextCorrespAcc, tagTypeCorrespAcc) = parseTagValue(tagValues[5])
-        data["CORRESPACC"] = if(tagTypeCorrespAcc == TypeTagValue.DIGIT_ONLY) correspAcc else ""
+        if(data["CORRESPACC"]  == null) data["CORRESPACC"] = if(tagTypeCorrespAcc == TypeTagValue.DIGIT_ONLY) correspAcc else ""
 
         return Pair(data, tagNextCorrespAcc)
     }
@@ -393,7 +396,7 @@ private fun String.isLetterCyrilic(): Boolean {
 private fun afterLastStringSymbol(valueTag: String): Int {
     for((index, symbol) in valueTag.withIndex()) {
         if(!('А'..'я').contains(symbol) &&
-            !listOf('ё', 'Ё', ' ', '.', '"', ',', '\'', '№').contains(symbol) &&
+            !listOf('ё', 'Ё', ' ', '.', '"', ',', '\'', '№', '-').contains(symbol) &&
             !('0'..'9').contains(symbol) ) {
 
             return index
@@ -425,7 +428,7 @@ private val TAGS = arrayOf(
 private val ALL_TAGS = arrayOf(
     "PERSONALACC", "BIC", "NAME", "PAYEEINN", "PERSACC", "PURPOSE", "SUM",
     "LASTNAME", "FIRSTNAME", "MIDDLENAME", "PAYERADDRESS", "PERSACC", "PAYMPERIOD", "TAXPERIOD", "DOCNO",
-    "CATEGORY", "KPP", "FIO", "BANKNAME", "CORRESPACC", "PAYERADDRESS"
+    "CATEGORY", "KPP", "FIO", "BANKNAME", "CORRESPACC"
 )
 
 private const val FIRST_CHAR: Int = 65535
@@ -436,6 +439,8 @@ fun Map<String, String>.findAmount(): Double? = this["SUM"]?.toIntOrNull()?.div(
 
 fun Map<String, String>.findFio(): String = this["FIO"]
         ?: this["LASTNAME"]?.let { "$it ${this["FIRSTNAME"]?:EMPTY} ${this["MIDDLENAME"]?:EMPTY}".trim() } ?: ""
+
+fun Map<String, String>.findPayerAddres(): String = this["PAYERADDRESS"]?:""
 
 fun Map<String, String>.findPayee(): String = this["NAME"]?:""
 

@@ -69,6 +69,7 @@ class ToolBarCash(private val panelCashPay: PanelCashPay) : JToolBar(), StoreLis
 
         toolButton("exec24", "Исполнить") {
             processShowError {
+                CashPayService.savePay()
                 CashPayService.execPay()
             }
             scannerText.requestFocus()

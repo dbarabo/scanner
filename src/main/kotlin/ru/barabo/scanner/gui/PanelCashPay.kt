@@ -89,7 +89,7 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>> {
             }
         }
 
-        groupPanel("Принято от", 6, 6, 0).apply {
+        groupPanel("Принято от", 6, 7, 0).apply {
 
             comboBoxWithItems("Плательщик", 0, ClientPhysicService.elemRoot(), 0, 3).apply {
 
@@ -106,48 +106,53 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>> {
                 first.addActionListener { setSelectedPayerCombo( first.selectedIndex ) }
             }
 
-            comboBox("Тип док-та", 1, PasportTypeService.elemRoot()).apply {
+            textFieldHorizontal("Адрес", 1, 0, 3).apply {
+                assignerProps += AssignerProp(this, CashPay::payerAddress, CashPayService::selectedEntity,
+                        this::setText, { this.text } )
+            }
+
+            comboBox("Тип док-та", 2, PasportTypeService.elemRoot()).apply {
 
                 pasportTypeCombo = this
 
                 addActionListener { setSelectedPassportTypeCombo( selectedIndex ) }
             }
 
-            textFieldHorizontal("Код подразделения", 1, 2).apply {
+            textFieldHorizontal("Код подразделения", 2, 2).apply {
                 assignerProps += AssignerProp(this, CashPay::departmentCode, CashPayService::selectedEntity,
                         this::setText, { this.text } )
             }
 
-            textFieldHorizontal("Серия", 2).apply {
+            textFieldHorizontal("Серия", 3).apply {
                 assignerProps += AssignerProp(this, CashPay::linePasport, CashPayService::selectedEntity,
                         this::setText, { this.text } )
             }
 
-            textFieldHorizontal("Номер", 2, 2).apply {
+            textFieldHorizontal("Номер", 3, 2).apply {
                 assignerProps += AssignerProp(this, CashPay::numberPasport, CashPayService::selectedEntity,
                         this::setText, { this.text } )
             }
 
-            textFieldHorizontal("Кем выдан", 3).apply {
+            textFieldHorizontal("Кем выдан", 4).apply {
                 assignerProps += AssignerProp(this, CashPay::byIssued, CashPayService::selectedEntity,
                         this::setText, { this.text } )
             }
-            datePicker("Дата док-та", 3, 2).apply {
+            datePicker("Дата док-та", 4, 2).apply {
                 // assignerProps += AssignerProp(this, CashPay::linePasport, CashPayService::selectedEntity,
                 //         this::setText, { this.text } )
             }
 
-            textFieldHorizontal("Место рождения", 4).apply {
+            textFieldHorizontal("Место рождения", 5).apply {
                 assignerProps += AssignerProp(this, CashPay::birthPlace, CashPayService::selectedEntity,
                         this::setText, { this.text } )
             }
-            datePicker("Дата рождения", 4, 2).apply {
+            datePicker("Дата рождения", 5, 2).apply {
                 // assignerProps += AssignerProp(this, CashPay::linePasport, CashPayService::selectedEntity,
                 //         this::setText, { this.text } )
             }
         }
 
-        groupPanel("Получатель", 12, 4, 0).apply {
+        groupPanel("Получатель", 13, 4, 0).apply {
             textFieldHorizontal("Наименование", 0, 0, 3).apply {
                 assignerProps += AssignerProp(this, CashPay::payeeName, CashPayService::selectedEntity,
                         this::setText, { this.text } )
@@ -173,7 +178,7 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>> {
             }
         }
 
-        groupPanel("Реквизиты получателя", 16, 4, 0).apply {
+        groupPanel("Реквизиты получателя", 17, 4, 0).apply {
             textFieldHorizontal("р/счет", 0).apply {
                 assignerProps += AssignerProp(this, CashPay::payeeAccount, CashPayService::selectedEntity,
                         this::setText, { this.text } )
@@ -190,7 +195,7 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>> {
             }
         }
 
-        maxSpaceYConstraint(20)
+        maxSpaceYConstraint(21)
 
         setEnabledAll(false)
 
