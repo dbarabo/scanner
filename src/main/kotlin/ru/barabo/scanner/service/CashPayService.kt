@@ -110,6 +110,10 @@ object CashPayService : StoreFilterService<CashPay>(AfinaOrm, CashPay::class.jav
     private fun infoToCashPay(): CashPay {
         val entity = selectedEntity() ?: createNewEntity()
 
+        if(entity.idAfinaDoc != null && (entity.state == 1L || entity.state == 2L)) {
+            throw Exception("Исполненые либо удаленные док-ты нельзя менять")
+        }
+
         entity.amount = scannerInfo.findAmount() ?: entity.amount
 
         entity.payerFio = scannerInfo.findFio().ifEmpty(entity.payerFio)
