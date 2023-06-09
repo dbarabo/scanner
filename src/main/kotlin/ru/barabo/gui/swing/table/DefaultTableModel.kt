@@ -7,8 +7,6 @@ import kotlin.reflect.KMutableProperty1
 
 class DefaultTableModel<T: Any>(private val columns: List<ColumnTableModel<T, *>>, val store: StoreService<T, *>) : AbstractTableModel() {
 
-//    private val logger = Logger.getLogger(DefaultTableModel::class.java)
-
     internal var isReadOnly = false
 
     override fun getRowCount(): Int = store.dataListCount()

@@ -1,6 +1,6 @@
 package ru.barabo.scanner.main
 
-import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 import ru.barabo.afina.AccessMode
 import ru.barabo.afina.AfinaQuery
 import ru.barabo.afina.UserDepartment
@@ -8,7 +8,6 @@ import ru.barabo.afina.VersionChecker
 import ru.barabo.afina.gui.ModalConnect
 import ru.barabo.gui.swing.ResourcesManager
 import ru.barabo.gui.swing.processShowError
-import ru.barabo.report.gui.TabReport
 import ru.barabo.scanner.gui.TabCash
 import java.awt.BorderLayout
 import java.awt.event.WindowAdapter
@@ -78,7 +77,7 @@ class Scanner : JFrame() {
 
             addTab(TabCash.TITLE, TabCash() )
 
-            addTab(TabReport.TITLE, TabReport() )
+            //addTab(TabReport.TITLE, TabReport( ReportChecker() ) )
         }
     }
 
@@ -103,7 +102,7 @@ private const val CHECK_WORKPLACE = "{ call od.PTKB_CASH.checkWorkplace }"
 
 private const val SEL_CURSOR_USER_DEPARTMENT = "{ ? = call od.PTKB_CASH.getUserAndDepartment }"
 
-private val logger = Logger.getLogger(Scanner::class.simpleName)!!
+private val logger = LoggerFactory.getLogger(Scanner::class.java)!!
 
 private fun initUserDepartment(): UserDepartment {
     val data = AfinaQuery.selectCursor(query = SEL_CURSOR_USER_DEPARTMENT)
@@ -127,5 +126,5 @@ private fun initUserDepartment(): UserDepartment {
     val accountCode = (row[7] as? String) ?: ""
 
     return UserDepartment(userName, departmentName, workPlace, AccessMode.byWorkPlace(workPlace), userId, workPlaceId,
-            departmentId, accountCode, accountId).apply { logger.error(this) }
+            departmentId, accountCode, accountId).apply { logger.error("$this") }
 }

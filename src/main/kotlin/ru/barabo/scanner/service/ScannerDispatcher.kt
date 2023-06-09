@@ -1,17 +1,25 @@
+@file:Suppress("CAST_NEVER_SUCCEEDS")
+
 package ru.barabo.scanner.service
 
-import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
+import ru.barabo.afina.AfinaQuery
 import java.awt.KeyEventDispatcher
 import java.awt.KeyboardFocusManager
 import java.awt.event.KeyEvent
 import java.awt.event.KeyEvent.*
+import java.io.IOException
+import java.sql.Timestamp
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.*
 import javax.swing.JTextArea
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
 object ScannerDispatcher : KeyEventDispatcher {
 
-    private val logger = Logger.getLogger(ScannerDispatcher::class.simpleName)!!
+    private val logger = LoggerFactory.getLogger(ScannerDispatcher::class.java)!!
 
     private var scanText: String = ""
 
@@ -113,6 +121,14 @@ object ScannerDispatcher : KeyEventDispatcher {
         focusedComponent.text = ""
         logger.error("sendInfoToListeners =$textInfo")
 
+        val customFields = customScannerFields(textInfo)
+        if(customFields.isNotEmpty()) {
+            listeners.forEach {
+                it.scanInfo(customFields)
+            }
+            return
+        }
+
         val mapInfo = textInfo.split('|')
                 .filter { it.contains('=') }
                 .map { it.substringBefore('=').toUpperCase().trim() to it.substringAfter('=') }
@@ -132,6 +148,84 @@ object ScannerDispatcher : KeyEventDispatcher {
         listeners.forEach {
             it.scanInfo(mapParsedInfo)
         }
+    }
+
+    private fun customScannerFields(textInfo: String): Map<String, String> {
+
+        val textTrim = textInfo.trim().trim32()
+
+        val fields = textTrim.split(';')
+
+        logger.error("fields.size=${fields.size}")
+        logger.error("fields[0]=${fields[0].trim()}")
+
+        if((fields.size < 19) ||(fields[0].trim() !in arrayOf("П","ПК", "ПО"))) return emptyMap()
+
+        val map = HashMap<String, String>()
+
+        // ПК;0060547;30.05.2023;10702020;Иващенко Татьяна Александровна;281302640407;21;450547;1015;29.07.2015;7730176610;773001001;024501901;03100643000000019502;643;2;6010;368069.89;15311005000011000110;9070;775.00;15311009000011000110
+        map["DOC_NUMBER"] = fields[1]
+        map["TAXPERIOD"] = fields[3] //PERIOD_PAY
+        map["FIO"] = fields[4].uppercase(Locale.getDefault())
+        map["PAYER_INN"] = fields[5]
+        map["PAYER_DOC_NUMBER"] = fields[7]
+        map["PAYER_DOC_LINE"] = fields[8]
+        map["PAYER_DOC_ISSUED"] = fields[9]
+
+        if(fields[7].isNotEmpty() && fields[8].isNotEmpty()) {
+            map["PAYER_DOC_TYPE"] = "1000087119"
+            map["PASSPORT_NAME"] = "Паспорт гражданина РФ"
+        }
+
+        val countPay = fields[15].trim().toInt()
+
+        val (amountSum, kbk) = summaryAmountAndKbk(fields, countPay, startIndex = 16)
+
+        map["SUM"] = amountSum.toString()
+
+        map.putAll( getCustomPactByKbk(kbk.trim()) )
+
+        map["PAYEEINN"] = fields[10]
+        map["KPP"] = fields[11] //PAYEE_KPP
+        map["BIC"] = fields[12]
+        map["PERSONALACC"] = fields[13] //PAYEE_ACCOUNT_CODE
+
+        return map
+    }
+    private fun getCustomPactByKbk(kbk: String): Map<String, String> {
+
+
+        val params = arrayOf<Any?>(kbk, CODE_CUSTOM)
+
+        val map = HashMap<String, String>()
+
+        val pactInfo = AfinaQuery.selectCursor(SELECT_CUSTOM_BY_KBK, params)
+
+        if(pactInfo.isEmpty()) throw Exception("Не найдено ни одного договора с кодом=$CODE_CUSTOM и КБК=$kbk")
+
+        if(pactInfo.size > 1) throw Exception("Найдено больше одного договора с кодом=$CODE_CUSTOM и КБК=$kbk")
+
+        val pactRow = pactInfo[0]
+
+        map["PACT_CODE"] = CODE_CUSTOM
+
+        map["PHYS_PACT_ID"] = (pactRow[0] as Number).toString()
+
+        map["PACT_NAME"] = pactRow[1].toString()
+
+        map["NAME"] = pactRow[2].toString() // PAYEE_NAME
+        map["PAYEEINN"] = pactRow[3].toString()
+        map["KPP"] = pactRow[4].toString()
+
+        map["PERSONALACC"] = pactRow[5].toString() //PAYEE_ACCOUNT_CODE
+        map["PAYEE_BANK_ID"] = pactRow[6].toString()
+        map["BIC"] = pactRow[7].toString()
+        map["BANKNAME"] = pactRow[8]?.toString() ?: ""
+
+        map["PURPOSE"] = pactRow[9]?.toString() ?: ""
+
+
+        return map
     }
 
     private fun filteredMap(mapInfo: Map<String, String>): Map<String, String> {
@@ -471,6 +565,29 @@ private const val FIRST_CHAR: Int = 65535
 
 private const val ENTER_CHAR: Int = 10
 
+fun Map<String, String>.docNumber(): String? = this["DOC_NUMBER"]?.takeIf { it.trim().isNotEmpty() }?.let { getFormatDoc(it.trim(), 6, '0') }
+
+fun Map<String, String>.payerInn(): String? = this["PAYER_INN"]?.takeIf { it.isNotEmpty() }
+
+fun Map<String, String>.numberPasport(): String? = this["PAYER_DOC_NUMBER"]?.takeIf { it.isNotEmpty() }
+
+fun Map<String, String>.linePasport(): String? = this["PAYER_DOC_LINE"]?.takeIf { it.isNotEmpty() }
+
+fun Map<String, String>.dateIssuedPassport(): Timestamp? = this["PAYER_DOC_ISSUED"]?.takeIf { it.isNotEmpty() }
+    ?.let { Timestamp.valueOf( LocalDate.parse(it, DATE_FORMATTER).atStartOfDay() ) }
+
+fun Map<String, String>.typePasport(): Long? = this["PAYER_DOC_TYPE"]?.toLongOrNull()
+
+fun Map<String, String>.pasportTypeName(): String? = this["PASSPORT_NAME"]?.takeIf { it.isNotEmpty() }
+
+fun Map<String, String>.payeePactId(): Long? = this["PHYS_PACT_ID"]?.toLongOrNull()
+
+fun Map<String, String>.payeePactName(): String? = this["PACT_NAME"]?.takeIf { it.isNotEmpty() }
+
+fun Map<String, String>.payeeBankId(): Long? = this["PAYEE_BANK_ID"]?.toLongOrNull()
+
+fun Map<String, String>.payeePactCode(): String? = this["PACT_CODE"]?.takeIf { it.isNotEmpty() }
+
 fun Map<String, String>.findAmount(): Double? = this["SUM"]?.toIntOrNull()?.div(100.0)
 
 fun Map<String, String>.findFio(): String = this["FIO"]
@@ -492,16 +609,61 @@ fun Map<String, String>.findPayeeAccount(): String = this["PERSONALACC"]?:""
 
 fun Map<String, String>.findDetailAccount(): String = this["PERSACC"] ?: this["DOCNO"] ?: ""
 
-fun Map<String, String>.findDetailPeriod(): String = this["TAXPERIOD"] ?: this["PAYMPERIOD"] ?: ""
+fun Map<String, String>.findDetailPeriod(): String =
+    if(this["PACT_CODE"] == CODE_CUSTOM && (this["TAXPERIOD"]?.length ?: 0) > 6)
+        this["TAXPERIOD"]!!.substring(0, 6) + "00"
+    else
+        this["TAXPERIOD"] ?: this["PAYMPERIOD"] ?: ""
 
 fun Map<String, String>.findDescription(): String {
     val desc = this["PURPOSE"] ?: this["CATEGORY"] ?: return EMPTY
 
-    return if(desc.isBlank()) EMPTY else if(desc.contains("ОПЛАТА", true)) desc else "Оплата за $desc"
+    return if(desc.isBlank()) EMPTY else
+        if(desc.contains("ОПЛАТА", true) ||
+            desc.contains("ПЛАТЕЖ", true) ) desc else "Оплата за $desc"
 }
 
 private const val EMPTY = ""
 
+private const val SELECT_CUSTOM_BY_KBK = "{ ? = call OD.PTKB_CASH.getPactByKbkAndCode(?, ?)"
+
+private const val CODE_CUSTOM = "ТАМОЖ"
+
+private const val DATE_FORMAT = "dd.MM.yyyy"
+
+private val DATE_FORMATTER = DateTimeFormatter.ofPattern(DATE_FORMAT)
+
+fun getFormatDoc(number: String, length: Int, ch: Char): String =
+    if(number.length >= length) number.substring(number.length-length)
+    else number.padStart(length, ch)
+
+fun summaryAmountAndKbk(fields: List<String>, count: Int, startIndex: Int): Pair<Long, String> {
+
+    var index: Int = startIndex
+
+    var amountSum: Long = 0L
+
+    var kbk: String = ""
+
+    for (loop in 1..count) {
+
+        amountSum += fields[index+1].replace(".", "").toIntOrNull() ?:
+                throw IOException("Ошибка преобразования в число=${fields[index+1]}")
+
+        kbk = fields[index+2]
+
+        index += 3
+
+        if(index >= fields.size) break;
+    }
+
+    return Pair(amountSum, kbk)
+}
+
+
 interface ScanEventListener {
     fun scanInfo(info: Map<String, String>)
 }
+
+fun String.trim32() = trim { it.toInt() <= 32 }
+

@@ -10,7 +10,7 @@ import ru.barabo.scanner.entity.PactDepartment
 object PactDepartmentService :  StoreFilterService<PactDepartment>(AfinaOrm, PactDepartment::class.java), StoreListener<List<CashPay>> {
 
     init {
-        CashPayService.addFirstListener(this)
+        CashPayService.addListener(this) //addFirstListener(this)
     }
 
     fun updatePayDocument(oldPact: PactDepartment?, cashPay: CashPay) {

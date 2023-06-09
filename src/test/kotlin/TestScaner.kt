@@ -1,9 +1,52 @@
-import org.apache.log4j.Logger
 import org.junit.Test
+import org.slf4j.LoggerFactory
+import ru.barabo.scanner.service.dateIssuedPassport
+import ru.barabo.scanner.service.docNumber
 
 class TestScaner {
 
-    private val logger = Logger.getLogger(TestScaner::class.simpleName)!!
+    private val logger = LoggerFactory.getLogger(TestScaner::class.java)!!
+
+    //@Test
+    fun testgetFormatDoc() {
+
+        val map = mapOf("DOC_NUMBER" to "")
+
+        logger.error("docNumber=${map.docNumber()}")
+    }
+
+
+    //@Test
+    fun testTimestamp() {
+
+        val map = mapOf("PAYER_DOC_ISSUED" to "17.04.2019")
+
+        val time = map.dateIssuedPassport()
+
+        logger.error("time=$time")
+    }
+    //@Test
+    fun testsummaryAmountAndKbk() {
+
+        val fields =
+"ПО;0000773;02.06.2023;10716050;КАЛЕННИКОВ ВЛАДИСЛАВ АЛЕКСАНДРОВИЧ;250600781096;RU01001;656682;0518;17.04.2019;7730176610;773001001;024501901;03100643000000019502;643;2;9070;3100.00;15311009000011000110;9070;450079.86;15311009000011000110"
+    .split(';')
+
+        val countPay = fields[15].trim().toInt()
+
+        val (amountSum, kbk) = ru.barabo.scanner.service.summaryAmountAndKbk(fields, countPay, startIndex = 16)
+
+        logger.error("countPay=$countPay")
+
+        logger.error("amountSum=$amountSum")
+
+        logger.error("amountSum.toString()=${amountSum.toString()}")
+
+        logger.error("kbk=$kbk")
+
+        logger.error("fields=$fields")
+    }
+
 
 
     //@Test

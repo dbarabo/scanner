@@ -182,7 +182,11 @@ data class CashPay(
 
         @ColumnName("COMMIS_TYPE")
         @ColumnType(java.sql.Types.BIGINT)
-        var commisionType: Long? = null
+        var commisionType: Long? = null,
+
+        @ColumnName("PAYER_INN")
+        @ColumnType(java.sql.Types.VARCHAR)
+        var payerInn: String = ""
 ) {
         var stateName: String
         get() = when(state) {
@@ -198,9 +202,11 @@ data class CashPay(
         get() = amount.formatedCurrency()
         set(_) {}
 
-
-        override fun toString(): String = "amount=$amount payerFio=$payerFio payeeName=$payeeName payeeInn=$payeeInn " +
-                "payeeKpp=$payeeKpp payeeBik=$payeeBik payeeAccount=$payeeAccount detailAccount=$detailAccount detailPeriod=$detailPeriod descriptionPay=$descriptionPay"
+        override fun toString(): String = """
+amount=$amount payerFio=$payerFio payeeName=$payeeName payeeInn=$payeeInn 
+payeeKpp=$payeeKpp payeeBik=$payeeBik payeeAccount=$payeeAccount detailAccount=$detailAccount 
+detailPeriod=$detailPeriod descriptionPay=$descriptionPay payerInn=$payerInn              
+""".trimIndent()
 }
 
 private fun Number?.formatedCurrency() = this?.let { DecimalFormat("0.00").format(it) } ?: ""

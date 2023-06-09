@@ -24,7 +24,22 @@ data class DocumentInfo (
         var whoOut: String = "",
 
         @ColumnName("JURDICAL_ID")
-        var jurdicalId: Long? = null
+        var jurdicalId: Long? = null,
+
+        @ColumnName("CODE_OUT")
+        var codeOut: String = "",
+
+        @ColumnName("INN")
+        var inn: String = "",
+
+        @ColumnName("BIRTHDAY")
+        var birthday: Timestamp? = null,
+
+        @ColumnName("BIRTH_PLACE")
+        var birthPlace: String = "",
+
+        @ColumnName("ADDRESS")
+        var address: String = ""
 ) {
         override fun toString(): String = jurdicalId?.toString() ?: "NULL jurdicalId clientId=$clientId"
 }

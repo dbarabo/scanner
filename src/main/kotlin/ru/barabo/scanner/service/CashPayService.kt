@@ -1,10 +1,12 @@
 package ru.barabo.scanner.service
 
 import oracle.jdbc.OracleTypes
-import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 import ru.barabo.afina.AfinaOrm
 import ru.barabo.afina.AfinaQuery
 import ru.barabo.db.EditType
+import ru.barabo.db.SessionException
+import ru.barabo.db.SessionSetting
 import ru.barabo.db.annotation.QuerySelect
 import ru.barabo.db.service.StoreFilterService
 import ru.barabo.gui.swing.processShowError
@@ -13,18 +15,35 @@ import java.awt.im.InputContext
 
 object CashPayService : StoreFilterService<CashPay>(AfinaOrm, CashPay::class.java), QuerySelect, ScanEventListener {
 
-    private val logger = Logger.getLogger(CashPayService::class.simpleName)!!
+    private val logger = LoggerFactory.getLogger(CashPayService::class.java)!!
 
     private val scannerInfo: MutableMap<String, String> = LinkedHashMap()
+
+    private var scannerTemp: CashPay? = null
 
     override fun selectQuery(): String = "{ ? = call od.PTKB_CASH.getCashPayList }"
 
     override fun processInsert(item: CashPay) {}
 
-    override fun callBackSelectData(item: CashPay) {
-        super.processInsert(item)
-    }
+    override fun save(item: CashPay, sessionSetting: SessionSetting): CashPay {
 
+        val type = orm.save(item, sessionSetting)
+
+        when (type) {
+            EditType.INSERT -> {
+
+                processInsert(item)
+            }
+            EditType.EDIT -> {
+                processUpdate(item)
+            }
+            else -> throw SessionException("EditType is not valid $type")
+        }
+
+        sentRefreshAllListener(type)
+
+        return item
+    }
     override fun scanInfo(info: Map<String, String>) {
 
         processShowError {
@@ -107,8 +126,45 @@ object CashPayService : StoreFilterService<CashPay>(AfinaOrm, CashPay::class.jav
         reportData.buildRtfReport()
     }
 
+    fun infoUpdatedPayer() {
+
+        logger.error("infoUpdatedPayer scannerTemp=$scannerTemp")
+
+        if(scannerTemp == null) return
+
+        val tempEntity = scannerTemp!!
+
+        val entity = selectedEntity() ?: return
+
+        if(tempEntity.payerInn.isNotBlank()) {
+            entity.payerInn = tempEntity.payerInn
+        }
+
+        if(tempEntity.linePasport.isNotBlank()) {
+            entity.linePasport = tempEntity.linePasport
+        }
+
+        if(tempEntity.numberPasport.isNotBlank()) {
+            entity.numberPasport = tempEntity.numberPasport
+        }
+
+        if(tempEntity.dateIssued != null) {
+            entity.dateIssued = tempEntity.dateIssued
+        }
+
+        if(tempEntity.typePasport != null) {
+            entity.typePasport = tempEntity.typePasport
+        }
+
+        if(!tempEntity.pasportTypeName.isNullOrBlank() ) {
+            entity.pasportTypeName = tempEntity.pasportTypeName
+        }
+
+        scannerTemp = null
+    }
+
     private fun infoToCashPay(): CashPay {
-        val entity = selectedEntity() ?: createNewEntity()
+        val entity = selectedEntity() ?: throw java.lang.Exception("Сначала нажмите кнопку <Новый платеж>") //createNewEntity()
 
         if(entity.idAfinaDoc != null && (entity.state == 1L || entity.state == 2L)) {
             throw Exception("Исполненые либо удаленные док-ты нельзя менять")
@@ -138,7 +194,33 @@ object CashPayService : StoreFilterService<CashPay>(AfinaOrm, CashPay::class.jav
 
         entity.descriptionPay = scannerInfo.findDescription().ifEmpty(entity.descriptionPay)
 
-        logger.error(entity.toString())
+        // custom fields
+        entity.numberCashDoc = scannerInfo.docNumber() ?: entity.numberCashDoc
+
+        entity.payerInn = scannerInfo.payerInn() ?: entity.payerInn
+
+        entity.linePasport = scannerInfo.linePasport() ?: entity.linePasport
+
+        entity.numberPasport = scannerInfo.numberPasport() ?: entity.numberPasport
+
+        entity.dateIssued = scannerInfo.dateIssuedPassport() ?: entity.dateIssued
+
+        entity.typePasport = scannerInfo.typePasport() ?: entity.typePasport
+
+        entity.pasportTypeName = scannerInfo.pasportTypeName() ?: entity.pasportTypeName
+
+        entity.payeePactId = scannerInfo.payeePactId() ?: entity.payeePactId
+
+        entity.payeePactName = scannerInfo.payeePactName() ?: entity.payeePactName
+
+        entity.payeeBankId = scannerInfo.payeeBankId() ?: entity.payeeBankId
+
+        entity.payeePactCode = scannerInfo.payeePactCode() ?: entity.payeePactCode
+
+        scannerTemp = entity.copy()
+
+        logger.error("infoToCashPay entity=$entity")
+        logger.error("infoToCashPay scannerTemp=$scannerTemp")
 
         return entity
     }

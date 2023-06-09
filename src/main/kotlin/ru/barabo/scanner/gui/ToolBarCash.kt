@@ -1,6 +1,6 @@
 package ru.barabo.scanner.gui
 
-import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 import ru.barabo.db.EditType
 import ru.barabo.db.service.StoreListener
 import ru.barabo.gui.swing.onOffButton
@@ -16,7 +16,7 @@ import javax.swing.JToolBar
 
 class ToolBarCash(private val panelCashPay: PanelCashPay) : JToolBar(), StoreListener<List<CashPay>> {
 
-    private val logger = Logger.getLogger(ToolBarCash::class.simpleName)!!
+    private val logger = LoggerFactory.getLogger(ToolBarCash::class.java)!!
 
     private val execButton: AbstractButton
 

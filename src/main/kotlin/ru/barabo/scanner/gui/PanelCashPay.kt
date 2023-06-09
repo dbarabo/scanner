@@ -1,7 +1,8 @@
 package ru.barabo.scanner.gui
 
-import org.apache.log4j.Logger
+import org.jdesktop.swingx.JXDatePicker
 import org.jdesktop.swingx.autocomplete.AutoCompleteDecorator
+import org.slf4j.LoggerFactory
 import ru.barabo.db.EditType
 import ru.barabo.db.service.StoreFilterService
 import ru.barabo.db.service.StoreListener
@@ -9,10 +10,7 @@ import ru.barabo.gui.swing.*
 import ru.barabo.scanner.entity.CashPay
 import ru.barabo.scanner.entity.PactDepartment
 import ru.barabo.scanner.entity.PasportType
-import ru.barabo.scanner.service.CashPayService
-import ru.barabo.scanner.service.ClientPhysicService
-import ru.barabo.scanner.service.PactDepartmentService
-import ru.barabo.scanner.service.PasportTypeService
+import ru.barabo.scanner.service.*
 import java.awt.Component
 import java.awt.Container
 import java.awt.GridBagLayout
@@ -20,13 +18,32 @@ import java.awt.event.FocusEvent
 import java.awt.event.FocusListener
 import java.awt.event.KeyEvent
 import java.awt.event.KeyListener
+import java.sql.Timestamp
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.*
 import javax.swing.JCheckBox
 import javax.swing.JComboBox
 import javax.swing.JPanel
 import kotlin.reflect.KMutableProperty1
 import kotlin.reflect.jvm.javaType
 
-private val logger = Logger.getLogger(PanelCashPay::class.simpleName)!!
+private val logger = LoggerFactory.getLogger(PanelCashPay::class.java)!!
+
+private const val TIMESTAMP_FORMAT = "yyyy-MM-dd HH:mm:ss.S"
+
+private val TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern(TIMESTAMP_FORMAT)
+
+fun dateFromTextTimestamp(dateText: String?): Timestamp? = dateText?.takeIf { it.isNotEmpty() }
+    ?.let { Timestamp.valueOf( LocalDate.parse(it, TIMESTAMP_FORMATTER).atStartOfDay() ) }
+
+fun JXDatePicker.setDateFromText(dateText: String) {
+    date = dateFromTextTimestamp(dateText)
+}
+
+fun JXDatePicker.getDateAsText(): String? =
+    date?.let { TIMESTAMP_FORMATTER.format(it.toInstant().atZone(ZoneId.systemDefault())) }
 
 class PanelCashPay : JPanel(), StoreListener<List<CashPay>> {
 
@@ -91,7 +108,7 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>> {
 
         groupPanel("Принято от", 6, 7, 0).apply {
 
-            comboBoxWithItems("Плательщик", 0, ClientPhysicService.elemRoot(), 0, 3).apply {
+            comboBoxWithItems(label = "Плательщик", gridY = 0, list = ClientPhysicService.elemRoot() ).apply {
 
                 first.isEditable = true
 
@@ -104,6 +121,11 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>> {
                         first::setSelectedItem, { first.selectedItem?.toString() } )
 
                 first.addActionListener { setSelectedPayerCombo( first.selectedIndex ) }
+            }
+
+            textFieldHorizontal("ИНН Плательщика", 0, 2).apply {
+                assignerProps += AssignerProp(this, CashPay::payerInn, CashPayService::selectedEntity,
+                    this::setText, { this.text } )
             }
 
             textFieldHorizontal("Адрес", 1, 0, 3).apply {
@@ -138,8 +160,8 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>> {
                         this::setText, { this.text } )
             }
             datePicker("Дата док-та", 4, 2).apply {
-                // assignerProps += AssignerProp(this, CashPay::linePasport, CashPayService::selectedEntity,
-                //         this::setText, { this.text } )
+                assignerProps += AssignerProp(this, CashPay::dateIssued, CashPayService::selectedEntity,
+                         this::setDateFromText, this::getDateAsText )
             }
 
             textFieldHorizontal("Место рождения", 5).apply {
@@ -147,8 +169,8 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>> {
                         this::setText, { this.text } )
             }
             datePicker("Дата рождения", 5, 2).apply {
-                // assignerProps += AssignerProp(this, CashPay::linePasport, CashPayService::selectedEntity,
-                //         this::setText, { this.text } )
+                 assignerProps += AssignerProp(this, CashPay::birthDate, CashPayService::selectedEntity,
+                         this::setDateFromText, this::getDateAsText )
             }
         }
 
@@ -229,6 +251,8 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>> {
         ClientPhysicService.setSelectedNewIndex(comboIndex) ?: return
         ClientPhysicService.updatePayDocument(cashPay)
         fromEntity()
+
+        CashPayService.infoUpdatedPayer()
     }
 
     private fun setSelectedPactCombo( comboIndex: Int ) {
@@ -295,6 +319,7 @@ class AssignerProp <E> (component: Component,
 
         val typeValue = when(javaType) {
             String::class.javaObjectType -> value ?: ""
+            Timestamp::class.javaObjectType -> dateFromTextTimestamp(value)
             else -> {
                 try {
                     value?.replace(',', '.')?.trim()?.toDouble() ?: 0.0
@@ -304,7 +329,7 @@ class AssignerProp <E> (component: Component,
             }
         }
 
-        (prop as KMutableProperty1<E, Any>).set(entity, typeValue)
+        (prop as KMutableProperty1<E, Any?>).set(entity, typeValue)
     }
 }
 
@@ -343,5 +368,3 @@ private fun Container.setEnabledAll(isEnabl: Boolean) {
         }
     }
 }
-
-
