@@ -49,7 +49,7 @@ dependencies {
     implementation group: 'com.oracle.database.jdbc', name: 'ojdbc6', version: '11.2.0.4'
 
     implementation group: 'com.github.dbarabo', name: 'dbjdb', version: '0.9.9'
-    implementation group: 'com.github.dbarabo', name: 'xlsx', version: '0.9.26'
+    implementation group: 'com.github.dbarabo', name: 'xlsx', version: '0.9.27'
 
     testImplementation group: 'junit', name: 'junit', version: '4.12'
 }

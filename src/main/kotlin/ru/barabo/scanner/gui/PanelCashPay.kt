@@ -19,6 +19,7 @@ import java.awt.event.FocusListener
 import java.awt.event.KeyEvent
 import java.awt.event.KeyListener
 import java.sql.Timestamp
+import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -31,12 +32,28 @@ import kotlin.reflect.jvm.javaType
 
 private val logger = LoggerFactory.getLogger(PanelCashPay::class.java)!!
 
+private const val DATE_FORMAT = "dd.MM.yyyy"
+
+private const val ANY_DATE_FORMAT = "ddMMyyyy"
+
+private val DATE_FORMATTER = SimpleDateFormat(DATE_FORMAT)
+
 private const val TIMESTAMP_FORMAT = "yyyy-MM-dd HH:mm:ss.S"
 
 private val TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern(TIMESTAMP_FORMAT)
 
-fun dateFromTextTimestamp(dateText: String?): Timestamp? = dateText?.takeIf { it.isNotEmpty() }
-    ?.let { Timestamp.valueOf( LocalDate.parse(it, TIMESTAMP_FORMATTER).atStartOfDay() ) }
+private val ANY_DATE_FORMATTER = DateTimeFormatter.ofPattern(ANY_DATE_FORMAT)
+
+private fun String.timestampToFormat(formatter: DateTimeFormatter): Timestamp =
+    Timestamp.valueOf( LocalDate.parse(this, formatter).atStartOfDay() )
+
+fun dateFromTextTimestamp(dateText: String?): Timestamp? {
+
+    if(dateText.isNullOrBlank()) return null
+
+    return dateText.takeIf { dateText.length == TIMESTAMP_FORMAT.length }?.timestampToFormat(TIMESTAMP_FORMATTER)
+        ?: dateText.filter { it.isDigit() }.takeIf { it.length == ANY_DATE_FORMAT.length }?.timestampToFormat(ANY_DATE_FORMATTER)
+}
 
 fun JXDatePicker.setDateFromText(dateText: String) {
     date = dateFromTextTimestamp(dateText)
@@ -160,8 +177,11 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>> {
                         this::setText, { this.text } )
             }
             datePicker("Дата док-та", 4, 2).apply {
-                assignerProps += AssignerProp(this, CashPay::dateIssued, CashPayService::selectedEntity,
-                         this::setDateFromText, this::getDateAsText )
+                assignerProps += AssignerProp(this.editor, CashPay::dateIssued, CashPayService::selectedEntity,
+                         this::setDateFromText
+                ) { this.editor.text }
+
+                this.setFormats( DATE_FORMATTER )
             }
 
             textFieldHorizontal("Место рождения", 5).apply {
@@ -169,8 +189,11 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>> {
                         this::setText, { this.text } )
             }
             datePicker("Дата рождения", 5, 2).apply {
-                 assignerProps += AssignerProp(this, CashPay::birthDate, CashPayService::selectedEntity,
-                         this::setDateFromText, this::getDateAsText )
+                 assignerProps += AssignerProp(this.editor, CashPay::birthDate, CashPayService::selectedEntity,
+                         this::setDateFromText
+                 ) { this.editor.text }
+
+                this.setFormats( DATE_FORMATTER )
             }
         }
 
@@ -354,8 +377,6 @@ class PropFocusListener<E>(private val assignerProp: AssignerProp<E>) : FocusLis
 }
 
 private fun Container.setEnabledAll(isEnabl: Boolean) {
-
-    //logger.error("setEnabledAll isEnabled= $isEnabl")
 
     for(child in this.components) {
 

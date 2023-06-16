@@ -27,6 +27,8 @@ object CashPayService : StoreFilterService<CashPay>(AfinaOrm, CashPay::class.jav
 
     override fun save(item: CashPay, sessionSetting: SessionSetting): CashPay {
 
+        item.checkFieldsBeforeSave()
+
         val type = orm.save(item, sessionSetting)
 
         when (type) {

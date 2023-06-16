@@ -2,6 +2,7 @@ package ru.barabo.scanner.entity
 
 import ru.barabo.afina.SEQ_CLASSIFIED
 import ru.barabo.db.annotation.*
+import java.lang.Exception
 import java.sql.Timestamp
 import java.text.DecimalFormat
 
@@ -201,6 +202,37 @@ data class CashPay(
         var amountFormat: String
         get() = amount.formatedCurrency()
         set(_) {}
+
+
+        fun checkFieldsBeforeSave() {
+                if(cashAccountId == null) throw Exception("Не указан номер счета кабинки кассы")
+
+                if(payeePactCode?.uppercase() != "ТАМОЖ") return
+
+                if(payerAddress.isBlank()) throw Exception("Заполните адрес")
+
+                if(amount<= 0.0) throw Exception("Сумма не может быть нулевой")
+
+                if(payerFio.isBlank()) throw Exception("Заполните ФИО Плательщика")
+
+                if(birthPlace.isBlank()) throw Exception("Заполните Место рождения")
+
+                if(birthDate == null) throw Exception("Заполните Дату рождения")
+
+                if(linePasport.length != 4) throw Exception("Серия паспорта должна состоять из 4-х цифр")
+
+                if(numberPasport.length != 6) throw Exception("Номер паспорта должен состоять из 6-х цифр")
+
+                if(dateIssued == null) throw Exception("Заполните Дату выдачи паспорта")
+
+                if(byIssued.isBlank()) throw Exception("Заполните поле 'Кем выдан паспорт'")
+
+                if(departmentCode.isBlank()) throw Exception("Заполните поле 'Код подразделения'")
+
+                if(detailPeriod.length != 8) throw Exception("Заполните поле Код таможни в поле 'Период оплаты' он должен состоять из 8-ми цифр")
+
+                if(payerInn.length != 12) throw Exception("ИНН плательщика должен состоять из 12-ти цифр")
+        }
 
         override fun toString(): String = """
 amount=$amount payerFio=$payerFio payeeName=$payeeName payeeInn=$payeeInn 

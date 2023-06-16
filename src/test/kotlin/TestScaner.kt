@@ -2,10 +2,21 @@ import org.junit.Test
 import org.slf4j.LoggerFactory
 import ru.barabo.scanner.service.dateIssuedPassport
 import ru.barabo.scanner.service.docNumber
+import ru.barabo.scanner.service.trim32
 
 class TestScaner {
 
     private val logger = LoggerFactory.getLogger(TestScaner::class.java)!!
+
+    //@Test
+    fun testsummaryTrim() {
+
+        val fields =
+            "П;;02.06.2023;10702020;Верховых Лидия Ивановна;250602061030;21;662727;0501;16.01.2002;7730176610;773001001;024501901;03100643000000019502;643;3;9070;832065.51;15311009000011000110"
+                .split(';')
+
+        logger.error(fields[0].trim().trim32())
+    }
 
     //@Test
     fun testgetFormatDoc() {
@@ -84,9 +95,7 @@ class TestScaner {
 //        }
 //
 //        logger.error("c=ё CODE=${'ё'.toInt()} isLetter=${'ё'.isLetter()}")
-        logger.error("c=Ь CODE=${'Ь'.toInt()} isLetter=${'Ь'.isLetter()}")
+        //logger.error("c=Ь CODE=${'Ь'.toInt()} isLetter=${'Ь'.isLetter()}")
     }
-
-
 
 }

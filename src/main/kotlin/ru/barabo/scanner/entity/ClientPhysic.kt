@@ -3,7 +3,7 @@ package ru.barabo.scanner.entity
 import ru.barabo.db.annotation.ColumnName
 import ru.barabo.db.annotation.SelectQuery
 
-@SelectQuery("{ ? = call OD.XLS_REPORT_ALL.getClientPhysicByUserDepart }")
+@SelectQuery("{ ? = call OD.PTKB_CASH.getClientPhysicByUserDepart }")
 data class ClientPhysic(
         @ColumnName("LABEL")
         var label: String = "",

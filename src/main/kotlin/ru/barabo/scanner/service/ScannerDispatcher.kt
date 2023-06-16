@@ -159,7 +159,7 @@ object ScannerDispatcher : KeyEventDispatcher {
         logger.error("fields.size=${fields.size}")
         logger.error("fields[0]=${fields[0].trim()}")
 
-        if((fields.size < 19) ||(fields[0].trim() !in arrayOf("П","ПК", "ПО"))) return emptyMap()
+        if((fields.size < 19) ||(fields[0].trim().trim32() !in arrayOf("П","ПК", "ПО"))) return emptyMap()
 
         val map = HashMap<String, String>()
 
