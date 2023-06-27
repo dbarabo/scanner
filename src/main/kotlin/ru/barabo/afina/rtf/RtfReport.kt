@@ -126,7 +126,7 @@ private fun getBbrText(procedureName: String, query: String, params :Array<Any?>
 
 private fun fullPathConverterExe(directory: File): File = File("${directory.absolutePath}/$CONVERT_EXE")
 
-private const val MAIN_LIB = "\\\\192.168.0.35\\work2\\Modules\\java\\lib\\"
+private const val MAIN_LIB = "I:\\Modules\\java\\lib\\"
 
 private const val CONVERT_EXE = "Convert.exe"
 

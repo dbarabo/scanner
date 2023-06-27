@@ -9,11 +9,13 @@ import ru.barabo.afina.gui.ModalConnect
 import ru.barabo.gui.swing.ResourcesManager
 import ru.barabo.gui.swing.processShowError
 import ru.barabo.scanner.gui.TabCash
+import ru.barabo.scanner.service.CashPayService
 import java.awt.BorderLayout
 import java.awt.event.WindowAdapter
 import java.awt.event.WindowEvent
 import javax.swing.JFrame
 import javax.swing.JTabbedPane
+import kotlin.concurrent.thread
 import kotlin.system.exitProcess
 
 fun main() {
@@ -44,6 +46,10 @@ class Scanner : JFrame() {
             exitProcess(0)
         }
 
+        thread {
+            CashPayService.initFms()
+        }
+
         buildGui()
     }
 
@@ -62,7 +68,7 @@ class Scanner : JFrame() {
         pack()
         extendedState = MAXIMIZED_BOTH
 
-        VersionChecker.runCheckVersion("SCANNER.JAR", 2)
+        VersionChecker.runCheckVersion("SCANNER.JAR", 3)
 
         addWindowListener(object : WindowAdapter() {
             override fun windowClosing(e: WindowEvent?) {

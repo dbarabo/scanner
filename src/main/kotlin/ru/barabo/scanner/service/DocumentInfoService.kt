@@ -1,16 +1,12 @@
 package ru.barabo.scanner.service
 
-import org.apache.log4j.Logger
-import org.slf4j.LoggerFactory
 import ru.barabo.afina.AfinaOrm
-import ru.barabo.db.annotation.ColumnName
 import ru.barabo.db.annotation.ParamsSelect
 import ru.barabo.db.service.StoreFilterService
 import ru.barabo.scanner.entity.CashPay
 import ru.barabo.scanner.entity.DocumentInfo
-import java.sql.Timestamp
 
-private val logger = LoggerFactory.getLogger(DocumentInfoService::class.java)!!
+//private val logger = LoggerFactory.getLogger(DocumentInfoService::class.java)!!
 
 object DocumentInfoService : StoreFilterService<DocumentInfo>(AfinaOrm, DocumentInfo::class.java), ParamsSelect {
 

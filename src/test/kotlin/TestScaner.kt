@@ -8,6 +8,14 @@ class TestScaner {
 
     private val logger = LoggerFactory.getLogger(TestScaner::class.java)!!
 
+
+    @Test
+    fun testFioPattern() {
+        val fio = "НЕГАНОВА! ММАРГАРИТА АНАТОЛЬЕВНА"
+
+        //if(isNotFioPattern(fio.trim().uppercase(Locale.getDefault() ))) throw Exception("Неправильно написана 'фамилия имя отчество'")
+    }
+
     //@Test
     fun testsummaryTrim() {
 

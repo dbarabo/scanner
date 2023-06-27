@@ -2,15 +2,18 @@ package ru.barabo.scanner.gui
 
 import org.jdesktop.swingx.JXDatePicker
 import org.jdesktop.swingx.autocomplete.AutoCompleteDecorator
-import org.slf4j.LoggerFactory
 import ru.barabo.db.EditType
 import ru.barabo.db.service.StoreFilterService
 import ru.barabo.db.service.StoreListener
 import ru.barabo.gui.swing.*
 import ru.barabo.scanner.entity.CashPay
+import ru.barabo.scanner.entity.ClientPhysic
 import ru.barabo.scanner.entity.PactDepartment
 import ru.barabo.scanner.entity.PasportType
-import ru.barabo.scanner.service.*
+import ru.barabo.scanner.service.CashPayService
+import ru.barabo.scanner.service.ClientPhysicService
+import ru.barabo.scanner.service.PactDepartmentService
+import ru.barabo.scanner.service.PasportTypeService
 import java.awt.Component
 import java.awt.Container
 import java.awt.GridBagLayout
@@ -24,13 +27,11 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.*
-import javax.swing.JCheckBox
-import javax.swing.JComboBox
-import javax.swing.JPanel
+import javax.swing.*
 import kotlin.reflect.KMutableProperty1
 import kotlin.reflect.jvm.javaType
 
-private val logger = LoggerFactory.getLogger(PanelCashPay::class.java)!!
+//private val logger = LoggerFactory.getLogger(PanelCashPay::class.java)!!
 
 private const val DATE_FORMAT = "dd.MM.yyyy"
 
@@ -62,7 +63,31 @@ fun JXDatePicker.setDateFromText(dateText: String) {
 fun JXDatePicker.getDateAsText(): String? =
     date?.let { TIMESTAMP_FORMATTER.format(it.toInstant().atZone(ZoneId.systemDefault())) }
 
-class PanelCashPay : JPanel(), StoreListener<List<CashPay>> {
+class ClientPhysicListener(private val combo: JComboBox<ClientPhysic>) : StoreListener<List<ClientPhysic>> {
+    override fun refreshAll(elemRoot: List<ClientPhysic>, refreshType: EditType) {
+        if(refreshType != EditType.INIT) return
+
+        updateAllItems()
+    }
+
+    private fun updateAllItems() {
+
+        val payerIndex = CashPayService.selectedEntity()?.payerId?.let { ClientPhysicService.getIndexListById(it) }
+
+        val listeners = combo.actionListeners
+        listeners.forEach {  combo.removeActionListener(it) }
+
+        combo.model = DefaultComboBoxModel( ClientPhysicService.elemRoot().toTypedArray() )
+
+        payerIndex?.let {
+            combo.selectedIndex = payerIndex
+        }
+        listeners.forEach { combo.addActionListener(it) }
+
+    }
+}
+
+class PanelCashPay : JPanel(), StoreListener<List<CashPay>>  {
 
     private val assignerProps = ArrayList<AssignerProp<CashPay>>()
 
@@ -71,6 +96,10 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>> {
     private val pactCombo: JComboBox<PactDepartment>
 
     lateinit var isScanOnOff: JCheckBox
+
+    private val codeDepartment: JTextField
+
+    private var clientPhysicListener: ClientPhysicListener
 
     init {
         layout = GridBagLayout()
@@ -117,7 +146,7 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>> {
                         this::setText, { this.text } )
             }
 
-            textFieldHorizontal("Период оплаты", 4, 2).apply {
+            textFieldHorizontal("Таможня/Период опл.", 4, 2).apply {
                 assignerProps += AssignerProp(this, CashPay::detailPeriod, CashPayService::selectedEntity,
                         this::setText, { this.text } )
             }
@@ -138,6 +167,8 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>> {
                         first::setSelectedItem, { first.selectedItem?.toString() } )
 
                 first.addActionListener { setSelectedPayerCombo( first.selectedIndex ) }
+
+                clientPhysicListener = ClientPhysicListener(first)
             }
 
             textFieldHorizontal("ИНН Плательщика", 0, 2).apply {
@@ -160,6 +191,8 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>> {
             textFieldHorizontal("Код подразделения", 2, 2).apply {
                 assignerProps += AssignerProp(this, CashPay::departmentCode, CashPayService::selectedEntity,
                         this::setText, { this.text } )
+
+                codeDepartment = this
             }
 
             textFieldHorizontal("Серия", 3).apply {
@@ -172,10 +205,17 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>> {
                         this::setText, { this.text } )
             }
 
-            textFieldHorizontal("Кем выдан", 4).apply {
-                assignerProps += AssignerProp(this, CashPay::byIssued, CashPayService::selectedEntity,
-                        this::setText, { this.text } )
+            comboBoxChangeItems<String>("Кем выдан", 4).apply {
+
+                isEditable = true
+
+                assignerProps += AssignerProp(editor.editorComponent, CashPay::byIssued, CashPayService::selectedEntity,
+                    this::setSelectedItem, { this.selectedItem?.toString() } )
+
+                codeDepartment.addKeyListener(CodeOutKeyListener(CashPay::departmentCode,
+                    CashPayService::selectedEntity,this@apply) )
             }
+
             datePicker("Дата док-та", 4, 2).apply {
                 assignerProps += AssignerProp(this.editor, CashPay::dateIssued, CashPayService::selectedEntity,
                          this::setDateFromText
@@ -245,10 +285,12 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>> {
         setEnabledAll(false)
 
         CashPayService.addListener(this)
+
+        ClientPhysicService.addListener(clientPhysicListener)
     }
 
     fun refreshAllDefault() {
-        refreshAll(emptyList(), EditType.ALL)
+        refreshAll(emptyList<CashPay>(), EditType.ALL)
     }
 
     override fun refreshAll(elemRoot: List<CashPay>, refreshType: EditType) {
@@ -271,7 +313,9 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>> {
 
         val cashPay = CashPayService.selectedEntity() ?: return
 
-        ClientPhysicService.setSelectedNewIndex(comboIndex) ?: return
+        ClientPhysicService.setSelectedNewIndex(comboIndex)
+        if(comboIndex < 0 || comboIndex != ClientPhysicService.selectedRowIndex ) return
+
         ClientPhysicService.updatePayDocument(cashPay)
         fromEntity()
 
@@ -354,6 +398,53 @@ class AssignerProp <E> (component: Component,
 
         (prop as KMutableProperty1<E, Any?>).set(entity, typeValue)
     }
+}
+
+fun <T> Container.comboBoxChangeItems(label: String, gridY: Int, list: List<T>? = null, gridX: Int = 0): JComboBox<T> {
+
+    add( JLabel(label), labelConstraint(gridY, gridX) )
+
+    val items = list?.let { Vector(it) }
+
+    val combo = items?.let { JComboBox(it) } ?: JComboBox()
+
+    add(combo, textConstraint(gridY = gridY, gridX = gridX + 1) )
+
+    return combo
+}
+
+class CodeOutKeyListener<E>(private val prop: KMutableProperty1<E, out Any?>,
+                         private val entityGetter: ()->E?,
+                         private val combo: JComboBox<String>) : KeyListener {
+
+    private var priorCode: String = ""
+    override fun keyReleased(e: KeyEvent?) {
+
+        val entity = entityGetter() ?: return
+        val value = prop.getter(entity)?.toString() ?: return
+
+        if(value == priorCode) return
+
+        priorCode = value
+
+        setNewItems()
+    }
+
+    private fun setNewItems() {
+
+        val items: Array<String> = if(priorCode.isBlank()) emptyArray<String>()
+            else CashPayService.getFmsByCode(priorCode.trim()).toTypedArray()
+
+        combo.model = DefaultComboBoxModel(items)
+
+        if(items.size == 1) {
+          combo.selectedIndex = 0
+        }
+     }
+
+    override fun keyTyped(e: KeyEvent?) {}
+
+    override fun keyPressed(e: KeyEvent?) {}
 }
 
 class PropKeyListener<E>(private val assignerProp: AssignerProp<E>) : KeyListener {

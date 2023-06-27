@@ -13,6 +13,7 @@ import java.sql.Timestamp
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.*
+import java.util.regex.Pattern
 import javax.swing.JTextArea
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
@@ -38,6 +39,10 @@ object ScannerDispatcher : KeyEventDispatcher {
         isEnable = true
     }
 
+    fun addScanEventListener(listener: ScanEventListener) {
+        listeners.add(listener)
+    }
+
     var isEnable: Boolean = false
         set(value) {
             if(value && !field) {
@@ -49,19 +54,16 @@ object ScannerDispatcher : KeyEventDispatcher {
         }
 
     private fun offDispatcher() {
-        logger.error("OFFFFF!!!!!!!!!!")
         KeyboardFocusManager.getCurrentKeyboardFocusManager().removeKeyEventDispatcher(this)
     }
 
     private fun onDispatcher() {
-        logger.error("ON!!!!!!!!!!")
         KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(this)
     }
 
     override fun dispatchKeyEvent(e: KeyEvent): Boolean {
 
         if(e.keyLocation == KEY_LOCATION_NUMPAD) return false
-        //if(e.keyLocation != KEY_LOCATION_UNKNOWN) return false
 
         if(e.keyLocation == KEY_LOCATION_UNKNOWN && focusedComponent != KeyboardFocusManager.getCurrentKeyboardFocusManager().focusOwner) {
             focusedComponent.grabFocus()
@@ -72,7 +74,6 @@ object ScannerDispatcher : KeyEventDispatcher {
 
         if(e.keyChar.toInt() == 65535) return false
         if(e.id != KEY_TYPED) return false
-        // logger.error("${e.keyChar}_INT=${e.keyChar.toInt()}${e.paramString()}")
 
         if(e.keyChar.toInt() == ENTER_CHAR && scanText.isNotEmpty()) {
             val text = scanText
@@ -83,37 +84,6 @@ object ScannerDispatcher : KeyEventDispatcher {
         }
         scanText += e.keyChar
         return false
-/*
-        if(e.keyLocation != KEY_LOCATION_UNKNOWN && e.keyChar.toInt() !in listOf(FIRST_CHAR, ENTER_CHAR)) return false
-
-        if(!isStart) {
-            if(e.keyChar.toInt() == FIRST_CHAR) {
-                isStart = true
-                scanText = ""
-                focusedComponent.text = ""
-                focusedComponent.isVisible = true
-                focusedComponent.isEnabled = true
-                focusedComponent.grabFocus()
-                focusedComponent.parent.revalidate()
-                focusedComponent.grabFocus()
-            }
-            return false
-        }
-
-        if(e.keyChar.toInt() == FIRST_CHAR) return false
-
-        if(e.keyChar.toInt() == ENTER_CHAR && scanText.isNotEmpty()) {
-            val text = scanText
-            scanText = ""
-            isStart = false
-            sendInfoToListeners(text)
-            return false
-        }
-
-        scanText += e.keyChar
-        return
-
- */
     }
 
     private fun sendInfoToListeners(textInfo: String) {
@@ -135,15 +105,9 @@ object ScannerDispatcher : KeyEventDispatcher {
                 .filter { it.first.isTagBarCode() && it.second.isNotcontainsKeys() }
                 .toMap()
 
-        logger.error("mapInfo =$mapInfo")
-
         val mapFilteredInfo = filteredMap(mapInfo)
 
-        logger.error("mapFilteredInfo =$mapFilteredInfo")
-
         val mapParsedInfo = parseScanCodes(textInfo, mapFilteredInfo)
-
-        logger.error("mapParsedInfo =$mapParsedInfo")
 
         listeners.forEach {
             it.scanInfo(mapParsedInfo)
@@ -156,17 +120,19 @@ object ScannerDispatcher : KeyEventDispatcher {
 
         val fields = textTrim.split(';')
 
-        logger.error("fields.size=${fields.size}")
-        logger.error("fields[0]=${fields[0].trim()}")
-
-        if((fields.size < 19) ||(fields[0].trim().trim32() !in arrayOf("П","ПК", "ПО"))) return emptyMap()
+        if(fields.size < 19 ) return emptyMap()
 
         val map = HashMap<String, String>()
 
-        // ПК;0060547;30.05.2023;10702020;Иващенко Татьяна Александровна;281302640407;21;450547;1015;29.07.2015;7730176610;773001001;024501901;03100643000000019502;643;2;6010;368069.89;15311005000011000110;9070;775.00;15311009000011000110
         map["DOC_NUMBER"] = fields[1]
-        map["TAXPERIOD"] = fields[3] //PERIOD_PAY
+        map["TAXPERIOD"] = fields[3]
         map["FIO"] = fields[4].uppercase(Locale.getDefault())
+
+        if(isNotFioPattern(map["FIO"]!!) ) {
+            logger.error("FIO=${map["FIO"]}")
+            map["FIO"] = ""
+        }
+
         map["PAYER_INN"] = fields[5]
         map["PAYER_DOC_NUMBER"] = fields[7]
         map["PAYER_DOC_LINE"] = fields[8]
@@ -193,7 +159,6 @@ object ScannerDispatcher : KeyEventDispatcher {
         return map
     }
     private fun getCustomPactByKbk(kbk: String): Map<String, String> {
-
 
         val params = arrayOf<Any?>(kbk, CODE_CUSTOM)
 
@@ -223,7 +188,6 @@ object ScannerDispatcher : KeyEventDispatcher {
         map["BANKNAME"] = pactRow[8]?.toString() ?: ""
 
         map["PURPOSE"] = pactRow[9]?.toString() ?: ""
-
 
         return map
     }
@@ -266,20 +230,11 @@ object ScannerDispatcher : KeyEventDispatcher {
         val (data, nextCorrTag)  = parseScanDefaultCodes(tagValues, mapInfo)
         if(tagValues.size < 7) return data
 
-
-        for((key, value) in data) {
-            logger.error("data key=$key")
-            logger.error("data value=$value")
-        }
-
         val tempMap = HashMap<String, String>()
 
         var tag = nextCorrTag.trim().toUpperCase()
         for(tagValue in tagValues.drop(6)) {
             val (nameValue, nextTag, tagTypeValue) = parseTagValue(tagValue)
-
-            logger.error("CALC key=$tag")
-            logger.error("CALC value=$nameValue")
 
             if(TAGS.contains(tag)) {
                 if(data[tag] == null) data[tag] = nameValue
@@ -287,8 +242,6 @@ object ScannerDispatcher : KeyEventDispatcher {
                 val parseTagPrepare = prepareParseTag(nameValue, tagTypeValue, tag, data)
                 if(parseTagPrepare != null && data[parseTagPrepare] == null) {
                     data[parseTagPrepare] = nameValue
-
-                    logger.error("CALC PARSE TAG=$parseTagPrepare")
                 } else { // only digits
                     tempMap[tag] = nameValue
                 }
@@ -377,20 +330,20 @@ object ScannerDispatcher : KeyEventDispatcher {
 
     private fun parseScanDefaultCodes(tagValues: List<String>, mapInfo: Map<String, String>): Pair<HashMap<String, String>, String> {
         val data = HashMap<String, String>(mapInfo)
-        val (nameValue, nextTag) = parseName(tagValues[1])
+        val (nameValue, _) = parseName(tagValues[1])
 
         if(data["NAME"]  == null) data["NAME"] = nameValue
 
         if(tagValues.size < 3) return Pair(data, "")
-        val (account, tagAccount, tagTypeAccount) = parseTagValue(tagValues[2])
+        val (account, _, tagTypeAccount) = parseTagValue(tagValues[2])
         if(data["PERSONALACC"]  == null) data["PERSONALACC"] = if(tagTypeAccount == TypeTagValue.DIGIT_ONLY) account else ""
 
         if(tagValues.size < 4) return Pair(data, "")
-        val (bankName, tagBankName, tagTypeBankName) = parseTagValue(tagValues[3])
+        val (bankName, _, tagTypeBankName) = parseTagValue(tagValues[3])
         if(data["BANKNAME"]  == null) data["BANKNAME"] = if(tagTypeBankName != TypeTagValue.DIGIT_ONLY) bankName else ""
 
         if(tagValues.size < 5) return Pair(data, "")
-        val (bik, tagBik, tagTypeBik) = parseTagValue(tagValues[4])
+        val (bik, _, tagTypeBik) = parseTagValue(tagValues[4])
         if(data["BIC"]  == null) data["BIC"] = if(tagTypeBik == TypeTagValue.DIGIT_ONLY) bik else ""
 
         if(tagValues.size < 6) return Pair(data, "")
@@ -469,7 +422,7 @@ private fun afterLastStringDigitSymbol(valueTag: String): Pair<Int, TypeTagValue
 }
 
 private fun tagTypeLetter(valueTag: String, separatorIndex: Int): TypeTagValue {
-    val (value, tagName) = valueTag.valueAndTag(separatorIndex)
+    val (value, _) = valueTag.valueAndTag(separatorIndex)
 
     if(value.indexOf(',') > 0) return TypeTagValue.LETTER_ANY_WITH_COMMA
 
@@ -666,4 +619,11 @@ interface ScanEventListener {
 }
 
 fun String.trim32() = trim { it.toInt() <= 32 }
+
+
+private const val REG_EXP_FIO = "[А-ЯЁ-]+\\s[А-ЯЁ-]+\\s[А-ЯЁ-]+(\\s[А-ЯЁ]+)?$"
+
+private val PATTERN_FIO = Pattern.compile(REG_EXP_FIO)
+
+fun isNotFioPattern(fio: String): Boolean = !PATTERN_FIO.matcher(fio).matches()
 

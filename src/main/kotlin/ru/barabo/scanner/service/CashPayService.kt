@@ -9,9 +9,13 @@ import ru.barabo.db.SessionException
 import ru.barabo.db.SessionSetting
 import ru.barabo.db.annotation.QuerySelect
 import ru.barabo.db.service.StoreFilterService
+import ru.barabo.gui.swing.ResourcesManager
 import ru.barabo.gui.swing.processShowError
 import ru.barabo.scanner.entity.CashPay
 import java.awt.im.InputContext
+import java.util.*
+import kotlin.collections.ArrayList
+import kotlin.collections.LinkedHashMap
 
 object CashPayService : StoreFilterService<CashPay>(AfinaOrm, CashPay::class.java), QuerySelect, ScanEventListener {
 
@@ -21,13 +25,44 @@ object CashPayService : StoreFilterService<CashPay>(AfinaOrm, CashPay::class.jav
 
     private var scannerTemp: CashPay? = null
 
+    private val fmsMap = LinkedHashMap<String, MutableList<String>>()
+
+    fun getFmsByCode(code: String): List<String> = fmsMap[code] ?: emptyList()
+
+    fun initFms() {
+        val lines = ResourcesManager.readFms()
+
+        var priorCode = ""
+
+        for(line in lines) {
+            val code = line.substringBefore('\t').trim()
+            val name = line.substringAfter('\t').trim()
+
+            if(code != priorCode) {
+                priorCode = code
+
+                val newFms = ArrayList<String>()
+                newFms += name
+
+                fmsMap[code] = newFms
+            } else {
+                val fmsList = fmsMap[code] ?: throw java.lang.Exception("Не найдена запись для кода =$code")
+                fmsList += name
+            }
+        }
+    }
+
     override fun selectQuery(): String = "{ ? = call od.PTKB_CASH.getCashPayList }"
 
     override fun processInsert(item: CashPay) {}
 
     override fun save(item: CashPay, sessionSetting: SessionSetting): CashPay {
 
+        logger.error("save item=$item")
+
         item.checkFieldsBeforeSave()
+
+        item.payerFio = item.payerFio.trim().uppercase(Locale.getDefault() )
 
         val type = orm.save(item, sessionSetting)
 
@@ -51,12 +86,7 @@ object CashPayService : StoreFilterService<CashPay>(AfinaOrm, CashPay::class.jav
         processShowError {
             if(!isRusLanguage()) throw Exception(ERROR_LANG_IS_NOT_RUS)
 
-            for ((key, value) in info) {
-                scannerInfo.putIfAbsent(key, value)
-            }
-
-            logger.error("scanInfo")
-            info.forEach { (t, u) -> logger.error("$t=$u") }
+            scannerInfo.putAll(info)
 
             infoToCashPay()
 
@@ -75,14 +105,31 @@ object CashPayService : StoreFilterService<CashPay>(AfinaOrm, CashPay::class.jav
 
         entity.cashAccountId = AfinaQuery.getUserDepartment().accountId
 
-        save(entity)
+        val session = AfinaQuery.uniqueSession()
 
-        val afinaId = AfinaQuery.execute(EXEC_SAVE_CASH_PAY, arrayOf<Any?>(entity.id),
+        try {
+            this.save(entity, session)
+
+            val afinaId = AfinaQuery.execute(EXEC_SAVE_CASH_PAY, arrayOf<Any?>(entity.id), session,
                 intArrayOf(OracleTypes.NUMBER))?.get(0) ?: throw Exception("afinaId is not found for call $EXEC_SAVE_CASH_PAY")
 
-        entity.idAfinaDoc = (afinaId as Number).toLong()
+            entity.idAfinaDoc = (afinaId as Number).toLong()
 
+            AfinaQuery.commitFree(session)
+        } catch (e: java.lang.Exception) {
+            AfinaQuery.rollbackFree(session)
+
+            logger.error("savePay", e)
+
+            throw java.lang.Exception(e.message)
+        }
         reselectRow()
+
+        selectedEntity()?.payerId?.let {
+            if(!ClientPhysicService.isExistsClientById(it)) {
+                ClientPhysicService.addClient(it, selectedEntity()!!.payerFio)
+            }
+        }
     }
 
     fun execPay() {
@@ -123,7 +170,7 @@ object CashPayService : StoreFilterService<CashPay>(AfinaOrm, CashPay::class.jav
 
         if(entity.idAfinaDoc == null) throw Exception("Док-т платежа физ. лиц еще не существует")
 
-        val reportData = if(entity.payeePactCode == "ТАМОЖ") RtfPayCustomHouse(entity.idAfinaDoc!!) else RtfPayKinderGarden(entity.idAfinaDoc!!)
+        val reportData = RtfPayCustomHouse(entity.idAfinaDoc!!) //if(entity.payeePactCode == "ТАМОЖ") RtfPayCustomHouse(entity.idAfinaDoc!!) else RtfPayKinderGarden(entity.idAfinaDoc!!)
 
         reportData.buildRtfReport()
     }
@@ -220,10 +267,10 @@ object CashPayService : StoreFilterService<CashPay>(AfinaOrm, CashPay::class.jav
         entity.payeePactCode = scannerInfo.payeePactCode() ?: entity.payeePactCode
 
         scannerTemp = entity.copy()
-
+/*
         logger.error("infoToCashPay entity=$entity")
         logger.error("infoToCashPay scannerTemp=$scannerTemp")
-
+*/
         return entity
     }
 

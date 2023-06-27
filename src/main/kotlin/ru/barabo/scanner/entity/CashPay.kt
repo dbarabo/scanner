@@ -2,9 +2,12 @@ package ru.barabo.scanner.entity
 
 import ru.barabo.afina.SEQ_CLASSIFIED
 import ru.barabo.db.annotation.*
-import java.lang.Exception
+import ru.barabo.scanner.service.isNotFioPattern
 import java.sql.Timestamp
 import java.text.DecimalFormat
+import java.util.*
+
+//private val logger = LoggerFactory.getLogger(CashPay::class.java)!!
 
 @SelectQuery("""
 select cp.*, od.PTKB_CASH.getClientLabel(cp.PAYEE_BANK_ID) PAYEE_BANK_NAME, od.accountCode(cp.cash_account) CASH_ACCOUNT_CODE,
@@ -28,6 +31,7 @@ data class CashPay(
 
         @ColumnName("DOC_NUMBER")
         @ColumnType(java.sql.Types.VARCHAR)
+        @ReadOnly
         var numberCashDoc: String = "",
 
         @ColumnName("CASH_ACCOUNT_CODE")
@@ -207,8 +211,6 @@ data class CashPay(
         fun checkFieldsBeforeSave() {
                 if(cashAccountId == null) throw Exception("Не указан номер счета кабинки кассы")
 
-                if(payeePactCode?.uppercase() != "ТАМОЖ") return
-
                 if(payerAddress.isBlank()) throw Exception("Заполните адрес")
 
                 if(amount<= 0.0) throw Exception("Сумма не может быть нулевой")
@@ -229,15 +231,23 @@ data class CashPay(
 
                 if(departmentCode.isBlank()) throw Exception("Заполните поле 'Код подразделения'")
 
-                if(detailPeriod.length != 8) throw Exception("Заполните поле Код таможни в поле 'Период оплаты' он должен состоять из 8-ми цифр")
+                if(detailPeriod.length != 8) throw Exception("Заполните поле Код таможни в поле 'Таможня/Период опл.' он должен состоять из 8-ми цифр")
 
                 if(payerInn.length != 12) throw Exception("ИНН плательщика должен состоять из 12-ти цифр")
+
+                if((payeePactId ?: 0) <= 0) throw Exception("Не выбран Договор получателя услуг")
+
+                if(isNotFioPattern(payerFio.trim().uppercase(Locale.getDefault() ))) throw Exception("Неправильно написана 'фамилия имя отчество'")
         }
 
         override fun toString(): String = """
-amount=$amount payerFio=$payerFio payeeName=$payeeName payeeInn=$payeeInn 
-payeeKpp=$payeeKpp payeeBik=$payeeBik payeeAccount=$payeeAccount detailAccount=$detailAccount 
-detailPeriod=$detailPeriod descriptionPay=$descriptionPay payerInn=$payerInn              
+payerId=$payerId payerFio=$payerFio birthPlace=$birthPlace birthDate=$birthDate typePasport=$typePasport
+payerAddress=$payerAddress
+linePasport=$linePasport numberPasport=$numberPasport pasportTypeName=$pasportTypeName 
+dateIssued=$dateIssued departmentCode=$departmentCode byIssued=$byIssued
+payeePactId=$payeePactId amount=$amount 
+payeeBik=$payeeBik payeeAccount=$payeeAccount
+detailPeriod=$detailPeriod payerInn=$payerInn              
 """.trimIndent()
 }
 

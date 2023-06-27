@@ -1,6 +1,5 @@
 package ru.barabo.scanner.gui
 
-import org.slf4j.LoggerFactory
 import ru.barabo.db.EditType
 import ru.barabo.db.service.StoreListener
 import ru.barabo.gui.swing.onOffButton
@@ -8,21 +7,24 @@ import ru.barabo.gui.swing.processShowError
 import ru.barabo.gui.swing.toolButton
 import ru.barabo.scanner.entity.CashPay
 import ru.barabo.scanner.service.CashPayService
+import ru.barabo.scanner.service.ClientPhysicService
+import ru.barabo.scanner.service.ScanEventListener
 import ru.barabo.scanner.service.ScannerDispatcher
 import javax.swing.AbstractButton
 import javax.swing.JCheckBox
 import javax.swing.JTextArea
 import javax.swing.JToolBar
 
-class ToolBarCash(private val panelCashPay: PanelCashPay) : JToolBar(), StoreListener<List<CashPay>> {
+class ToolBarCash(private val panelCashPay: PanelCashPay) : JToolBar(), StoreListener<List<CashPay>>,
+    ScanEventListener {
 
-    private val logger = LoggerFactory.getLogger(ToolBarCash::class.java)!!
+    //private val logger = LoggerFactory.getLogger(ToolBarCash::class.java)!!
 
     private val execButton: AbstractButton
 
     private val deleteButton: AbstractButton
 
-    private lateinit var onOffButton: JCheckBox
+    private var onOffButton: JCheckBox
 
     private val scannerText: JTextArea = JTextArea().apply {
         rows = 2
@@ -33,6 +35,8 @@ class ToolBarCash(private val panelCashPay: PanelCashPay) : JToolBar(), StoreLis
 
     init {
         ScannerDispatcher.initKeyEvent(CashPayService, scannerText)
+
+        ScannerDispatcher.addScanEventListener(this)
 
         onOffButton("Режим Сканера", true) {
             ScannerDispatcher.isEnable = !ScannerDispatcher.isEnable
@@ -51,7 +55,6 @@ class ToolBarCash(private val panelCashPay: PanelCashPay) : JToolBar(), StoreLis
         }
 
         toolButton("newFile24", "Новый платеж") {
-            logger.error("onOffButton.isSelected=${onOffButton.isSelected}")
 
             panelCashPay.refreshAllDefault()
 
@@ -95,6 +98,15 @@ class ToolBarCash(private val panelCashPay: PanelCashPay) : JToolBar(), StoreLis
             scannerText.requestFocus()
         }
 
+        addSeparator()
+
+        toolButton("refresh24", "Обновить клиентов") {
+            processShowError {
+                ClientPhysicService.reselectAllData( CashPayService.selectedEntity() )
+            }
+            scannerText.requestFocus()
+        }
+
         add(scannerText)
 
         CashPayService.addListener(this)
@@ -105,5 +117,13 @@ class ToolBarCash(private val panelCashPay: PanelCashPay) : JToolBar(), StoreLis
     override fun refreshAll(elemRoot: List<CashPay>, refreshType: EditType) {
 
         execButton.isEnabled = CashPayService.selectedEntity()?.state == 0L
+    }
+
+    override fun scanInfo(info: Map<String, String>) {
+
+        if(!info["FIO"].isNullOrEmpty()) {
+            panelCashPay.isScanOnOff.isSelected = false
+            ScannerDispatcher.isEnable = false
+        }
     }
 }

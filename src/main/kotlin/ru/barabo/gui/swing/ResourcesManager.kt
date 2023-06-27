@@ -1,5 +1,6 @@
 package ru.barabo.gui.swing
 
+import java.io.InputStreamReader
 import java.net.URL
 import javax.swing.ImageIcon
 
@@ -21,4 +22,11 @@ object ResourcesManager {
 
         return path?.let{ URL(it) }
     }
+
+    private const val DB_FMS = "/fms.csv"
+
+    private fun textFileLinesInJar(fullPath :String) =
+        InputStreamReader(javaClass.getResourceAsStream(fullPath), "windows-1251").buffered().readLines()
+
+    fun readFms() = textFileLinesInJar(DB_FMS)
 }
