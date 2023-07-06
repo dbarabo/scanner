@@ -215,8 +215,8 @@ object CashPayService : StoreFilterService<CashPay>(AfinaOrm, CashPay::class.jav
     private fun infoToCashPay(): CashPay {
         val entity = selectedEntity() ?: throw java.lang.Exception("Сначала нажмите кнопку <Новый платеж>") //createNewEntity()
 
-        if(entity.idAfinaDoc != null && (entity.state == 1L || entity.state == 2L)) {
-            throw Exception("Исполненые либо удаленные док-ты нельзя менять")
+        if(entity.idAfinaDoc != null && (entity.state in arrayOf(1L, 2L, -1L)) ) {
+            throw Exception("Исполненые, удаленные и док-ты \"В кассе\" нельзя менять")
         }
 
         entity.amount = scannerInfo.findAmount() ?: entity.amount
@@ -267,15 +267,16 @@ object CashPayService : StoreFilterService<CashPay>(AfinaOrm, CashPay::class.jav
         entity.payeePactCode = scannerInfo.payeePactCode() ?: entity.payeePactCode
 
         scannerTemp = entity.copy()
-/*
-        logger.error("infoToCashPay entity=$entity")
-        logger.error("infoToCashPay scannerTemp=$scannerTemp")
-*/
+
         return entity
     }
 
     private fun createNewEntity(): CashPay {
         return CashPay().apply {
+
+            this.payeePactId = 1238476740
+            this.detailPeriod = "10702000"
+
             dataList.add(this)
             setSelectedEntity(this)
         }

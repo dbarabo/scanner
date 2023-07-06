@@ -46,7 +46,7 @@ private class CashPayRenderer : JLabel(), TableCellRenderer {
             0L -> table.background
             1L -> Color.LIGHT_GRAY
             2L -> Color.RED
-            -1L -> Color.BLUE
+            -1L -> Color.YELLOW
             else -> table.background
         }
 

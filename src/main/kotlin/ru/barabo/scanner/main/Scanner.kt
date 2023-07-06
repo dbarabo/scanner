@@ -68,7 +68,7 @@ class Scanner : JFrame() {
         pack()
         extendedState = MAXIMIZED_BOTH
 
-        VersionChecker.runCheckVersion("SCANNER.JAR", 3)
+        VersionChecker.runCheckVersion("SCANNER.JAR", 4)
 
         addWindowListener(object : WindowAdapter() {
             override fun windowClosing(e: WindowEvent?) {

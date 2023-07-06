@@ -6,6 +6,7 @@ import ru.barabo.db.EditType
 import ru.barabo.db.service.StoreFilterService
 import ru.barabo.scanner.entity.CashPay
 import ru.barabo.scanner.entity.ClientPhysic
+import java.util.*
 
 private val logger = LoggerFactory.getLogger(ClientPhysicService::class.java)!!
 
@@ -28,6 +29,18 @@ object ClientPhysicService : StoreFilterService<ClientPhysic>(AfinaOrm, ClientPh
         entity.id?.let { DocumentInfoService.reselectDocumentInfo(it) }
 
         DocumentInfoService.setDocInfoToCashPay(cashPay)
+    }
+
+    fun isExistsClearDataIfNotEquals(cashPay: CashPay, fio: String): Boolean {
+        val clientSelected = selectedEntity() ?: return false
+
+        if(clientSelected.label.replace(" ", "").uppercase(Locale.getDefault()) !=
+            fio.replace(" ", "").uppercase(Locale.getDefault()) ) {
+
+             return DocumentInfoService.isExistsClearEqualsInfo(cashPay)
+        }
+
+        return false
     }
 
     fun isExistsClientById(idClient: Long): Boolean {

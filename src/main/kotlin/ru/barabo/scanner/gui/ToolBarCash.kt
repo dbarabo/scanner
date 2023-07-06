@@ -18,7 +18,7 @@ import javax.swing.JToolBar
 class ToolBarCash(private val panelCashPay: PanelCashPay) : JToolBar(), StoreListener<List<CashPay>>,
     ScanEventListener {
 
-    //private val logger = LoggerFactory.getLogger(ToolBarCash::class.java)!!
+//    private val logger = LoggerFactory.getLogger(ToolBarCash::class.java)!!
 
     private val execButton: AbstractButton
 
@@ -116,12 +116,14 @@ class ToolBarCash(private val panelCashPay: PanelCashPay) : JToolBar(), StoreLis
 
     override fun refreshAll(elemRoot: List<CashPay>, refreshType: EditType) {
 
-        execButton.isEnabled = CashPayService.selectedEntity()?.state == 0L
+        execButton.isEnabled = CashPayService.selectedEntity()?.state in arrayOf(0L, -1L)
     }
 
     override fun scanInfo(info: Map<String, String>) {
+        if((!info["FIO"].isNullOrEmpty()) &&
+            (!info["PAYER_DOC_NUMBER"].isNullOrEmpty()) &&
+            (!info["PAYER_DOC_LINE"].isNullOrEmpty())  ) {
 
-        if(!info["FIO"].isNullOrEmpty()) {
             panelCashPay.isScanOnOff.isSelected = false
             ScannerDispatcher.isEnable = false
         }

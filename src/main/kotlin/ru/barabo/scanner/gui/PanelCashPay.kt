@@ -28,6 +28,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.*
 import javax.swing.*
+import javax.swing.text.JTextComponent
 import kotlin.reflect.KMutableProperty1
 import kotlin.reflect.jvm.javaType
 
@@ -91,64 +92,204 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>>  {
 
     private val assignerProps = ArrayList<AssignerProp<CashPay>>()
 
-    private val pasportTypeCombo: JComboBox<PasportType>
+    private lateinit var pasportTypeCombo: JComboBox<PasportType>
 
-    private val pactCombo: JComboBox<PactDepartment>
+    private lateinit var pactCombo: JComboBox<PactDepartment>
 
     lateinit var isScanOnOff: JCheckBox
 
-    private val codeDepartment: JTextField
+    private lateinit var codeDepartment: JTextField
 
-    private var clientPhysicListener: ClientPhysicListener
+    private lateinit var clientPhysicListener: ClientPhysicListener
 
     init {
         layout = GridBagLayout()
 
+        //defaultPayView()
+        customOnlyPayView()
+
+        maxSpaceYConstraint(21)
+
+        setEnabledAll(false)
+
+        CashPayService.addListener(this)
+
+        ClientPhysicService.addListener(clientPhysicListener)
+    }
+
+    private fun customOnlyPayView() {
+
+        groupPanel("Плательщик", 0, 3, 0).apply {
+            comboBoxWithItems(label = "Фамилия Имя Отчество", gridY = 0, list = ClientPhysicService.elemRoot() ).apply {
+
+                first.isEditable = true
+
+                AutoCompleteDecorator.decorate(first)
+
+                first.isEnabled = true
+                first.maximumRowCount = 20
+
+                assignerProps += AssignerProp(first.editor.editorComponent, CashPay::payerFio, CashPayService::selectedEntity,
+                    first::setSelectedItem, { first.selectedItem?.toString() } )
+
+                first.addActionListener { setSelectedPayerCombo( first.selectedIndex ) }
+
+                first.editor.editorComponent.addFocusListener(PayerFocusListener(first.editor.editorComponent as JTextComponent, this@PanelCashPay) )
+
+                clientPhysicListener = ClientPhysicListener(first)
+            }
+            textFieldHorizontal("ИНН", 0, 2).apply {
+                assignerProps += AssignerProp(this, CashPay::payerInn, CashPayService::selectedEntity,
+                    this::setText, { this.text } )
+            }
+
+            textFieldHorizontal("Адрес", 1, 0, 3).apply {
+                assignerProps += AssignerProp(this, CashPay::payerAddress, CashPayService::selectedEntity,
+                    this::setText, { this.text } )
+            }
+        }
+
+        groupPanel("Паспорт РФ", 3, 4, 0).apply {
+            textFieldHorizontal("Серия", 0).apply {
+                assignerProps += AssignerProp(this, CashPay::linePasport, CashPayService::selectedEntity,
+                    this::setText, { this.text } )
+            }
+            textFieldHorizontal("Номер", 0, 2).apply {
+                assignerProps += AssignerProp(this, CashPay::numberPasport, CashPayService::selectedEntity,
+                    this::setText, { this.text } )
+            }
+            datePicker("Дата выдачи", 0, 4).apply {
+                assignerProps += AssignerProp(this.editor, CashPay::dateIssued, CashPayService::selectedEntity,
+                    this::setDateFromText
+                ) { this.editor.text }
+
+                this.setFormats( DATE_FORMATTER )
+            }
+
+            textFieldHorizontal("Код подразделения", 1, 0).apply {
+                assignerProps += AssignerProp(this, CashPay::departmentCode, CashPayService::selectedEntity,
+                    this::setText, { this.text } )
+
+                codeDepartment = this
+            }
+            comboBoxChangeItems<String>("Кем выдан", 1, gridX = 2, width = 3).apply {
+
+                isEditable = true
+
+                assignerProps += AssignerProp(editor.editorComponent, CashPay::byIssued, CashPayService::selectedEntity,
+                    this::setSelectedItem, { this.selectedItem?.toString() } )
+
+                codeDepartment.addKeyListener(CodeOutKeyListener(CashPay::departmentCode,
+                    CashPayService::selectedEntity,this@apply) )
+            }
+
+            datePicker("Дата рождения", 2, 0).apply {
+                assignerProps += AssignerProp(this.editor, CashPay::birthDate, CashPayService::selectedEntity,
+                    this::setDateFromText
+                ) { this.editor.text }
+
+                this.setFormats( DATE_FORMATTER )
+            }
+            textFieldHorizontal("Место рождения", 2, 2, 3).apply {
+                assignerProps += AssignerProp(this, CashPay::birthPlace, CashPayService::selectedEntity,
+                    this::setText, { this.text } )
+            }
+        }
+
+        groupPanel("Платеж", 7, 6, 0).apply {
+            textFieldHorizontal("№ Таможни", 0, 0).apply {
+                assignerProps += AssignerProp(this, CashPay::detailPeriod, CashPayService::selectedEntity,
+                    this::setText, { this.text } )
+            }
+            comboBox("Договор", 0, PactDepartmentService.elemRoot(), 2, width = 3).apply {
+
+                pactCombo = this
+
+                maximumRowCount = 20
+
+                addActionListener { setSelectedPactCombo( selectedIndex ) }
+            }
+
+            textFieldHorizontal("Сумма", 1, 0, 1).apply {
+
+                assignerProps += AssignerProp(this, CashPay::amount, CashPayService::selectedEntity,
+                    this::setText, { this.text } )
+            }
+            textFieldHorizontal("Назначение платежа", 1, 2, 3).apply {
+                isEditable = true
+
+                assignerProps += AssignerProp(this, CashPay::descriptionPay, CashPayService::selectedEntity,
+                    this::setText, { this.text } )
+            }
+
+            textFieldHorizontal("№ Док-та", 2).apply {
+
+                isEditable = false
+
+                assignerProps += AssignerProp(this, CashPay::numberCashDoc, CashPayService::selectedEntity,
+                    this::setText, { this.text } )
+            }
+            textFieldHorizontal("Статус", 2, 2).apply {
+                isEditable = false
+
+                assignerProps += AssignerProp(this, CashPay::stateName, CashPayService::selectedEntity,
+                    this::setText, { this.text } )
+            }
+            textFieldHorizontal("Время", 2, 4).apply {
+                isEditable = false
+
+                assignerProps += AssignerProp(this, CashPay::timeDoc, CashPayService::selectedEntity,
+                    this::setText, { this.text } )
+            }
+        }
+    }
+
+    private fun defaultPayView() {
         groupPanel("Платеж", 0, 6, 0).apply {
             textFieldHorizontal("№", 0).apply {
 
                 isEditable = false
 
                 assignerProps += AssignerProp(this, CashPay::numberCashDoc, CashPayService::selectedEntity,
-                        this::setText, { this.text } )
+                    this::setText, { this.text } )
             }
 
             textFieldHorizontal("Статус", 0, 2).apply {
                 isEditable = false
 
                 assignerProps += AssignerProp(this, CashPay::stateName, CashPayService::selectedEntity,
-                        this::setText, { this.text } )
+                    this::setText, { this.text } )
             }
 
             textFieldHorizontal("Сумма", 1, 0).apply {
 
                 assignerProps += AssignerProp(this, CashPay::amount, CashPayService::selectedEntity,
-                         this::setText, { this.text } )
+                    this::setText, { this.text } )
             }
 
             textFieldHorizontal("Счет 409", 1, 2).apply {
                 isEditable = false
 
                 assignerProps += AssignerProp(this, CashPay::payAccount, CashPayService::selectedEntity,
-                        this::setText, { this.text } )
+                    this::setText, { this.text } )
             }
 
             textAreaHorizontal("Назначение платежа", 2, 2, 3).apply {
                 isEditable = true
 
                 assignerProps += AssignerProp(this, CashPay::descriptionPay, CashPayService::selectedEntity,
-                        this::setText, { this.text } )
+                    this::setText, { this.text } )
             }
 
             textFieldHorizontal("Л/С плательщика", 4, 0).apply {
 
                 assignerProps += AssignerProp(this, CashPay::detailAccount, CashPayService::selectedEntity,
-                        this::setText, { this.text } )
+                    this::setText, { this.text } )
             }
 
             textFieldHorizontal("Таможня/Период опл.", 4, 2).apply {
                 assignerProps += AssignerProp(this, CashPay::detailPeriod, CashPayService::selectedEntity,
-                        this::setText, { this.text } )
+                    this::setText, { this.text } )
             }
         }
 
@@ -164,12 +305,12 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>>  {
                 first.maximumRowCount = 20
 
                 assignerProps += AssignerProp(first.editor.editorComponent, CashPay::payerFio, CashPayService::selectedEntity,
-                        first::setSelectedItem, { first.selectedItem?.toString() } )
+                    first::setSelectedItem, { first.selectedItem?.toString() } )
 
                 first.addActionListener { setSelectedPayerCombo( first.selectedIndex ) }
 
                 clientPhysicListener = ClientPhysicListener(first)
-            }
+           }
 
             textFieldHorizontal("ИНН Плательщика", 0, 2).apply {
                 assignerProps += AssignerProp(this, CashPay::payerInn, CashPayService::selectedEntity,
@@ -178,7 +319,7 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>>  {
 
             textFieldHorizontal("Адрес", 1, 0, 3).apply {
                 assignerProps += AssignerProp(this, CashPay::payerAddress, CashPayService::selectedEntity,
-                        this::setText, { this.text } )
+                    this::setText, { this.text } )
             }
 
             comboBox("Тип док-та", 2, PasportTypeService.elemRoot()).apply {
@@ -190,19 +331,19 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>>  {
 
             textFieldHorizontal("Код подразделения", 2, 2).apply {
                 assignerProps += AssignerProp(this, CashPay::departmentCode, CashPayService::selectedEntity,
-                        this::setText, { this.text } )
+                    this::setText, { this.text } )
 
                 codeDepartment = this
             }
 
             textFieldHorizontal("Серия", 3).apply {
                 assignerProps += AssignerProp(this, CashPay::linePasport, CashPayService::selectedEntity,
-                        this::setText, { this.text } )
+                    this::setText, { this.text } )
             }
 
             textFieldHorizontal("Номер", 3, 2).apply {
                 assignerProps += AssignerProp(this, CashPay::numberPasport, CashPayService::selectedEntity,
-                        this::setText, { this.text } )
+                    this::setText, { this.text } )
             }
 
             comboBoxChangeItems<String>("Кем выдан", 4).apply {
@@ -218,7 +359,7 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>>  {
 
             datePicker("Дата док-та", 4, 2).apply {
                 assignerProps += AssignerProp(this.editor, CashPay::dateIssued, CashPayService::selectedEntity,
-                         this::setDateFromText
+                    this::setDateFromText
                 ) { this.editor.text }
 
                 this.setFormats( DATE_FORMATTER )
@@ -226,12 +367,12 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>>  {
 
             textFieldHorizontal("Место рождения", 5).apply {
                 assignerProps += AssignerProp(this, CashPay::birthPlace, CashPayService::selectedEntity,
-                        this::setText, { this.text } )
+                    this::setText, { this.text } )
             }
             datePicker("Дата рождения", 5, 2).apply {
-                 assignerProps += AssignerProp(this.editor, CashPay::birthDate, CashPayService::selectedEntity,
-                         this::setDateFromText
-                 ) { this.editor.text }
+                assignerProps += AssignerProp(this.editor, CashPay::birthDate, CashPayService::selectedEntity,
+                    this::setDateFromText
+                ) { this.editor.text }
 
                 this.setFormats( DATE_FORMATTER )
             }
@@ -240,17 +381,17 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>>  {
         groupPanel("Получатель", 13, 4, 0).apply {
             textFieldHorizontal("Наименование", 0, 0, 3).apply {
                 assignerProps += AssignerProp(this, CashPay::payeeName, CashPayService::selectedEntity,
-                        this::setText, { this.text } )
+                    this::setText, { this.text } )
             }
 
             textFieldHorizontal("ИНН", 1).apply {
                 assignerProps += AssignerProp(this, CashPay::payeeInn, CashPayService::selectedEntity,
-                        this::setText, { this.text } )
+                    this::setText, { this.text } )
             }
 
             textFieldHorizontal("КПП", 1, 2).apply {
                 assignerProps += AssignerProp(this, CashPay::payeeKpp, CashPayService::selectedEntity,
-                        this::setText, { this.text } )
+                    this::setText, { this.text } )
             }
 
             comboBox("Договор", 2, PactDepartmentService.elemRoot(), 0, 3).apply {
@@ -266,27 +407,19 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>>  {
         groupPanel("Реквизиты получателя", 17, 4, 0).apply {
             textFieldHorizontal("р/счет", 0).apply {
                 assignerProps += AssignerProp(this, CashPay::payeeAccount, CashPayService::selectedEntity,
-                        this::setText, { this.text } )
+                    this::setText, { this.text } )
             }
 
             textFieldHorizontal("Бик банка", 1).apply {
                 assignerProps += AssignerProp(this, CashPay::payeeBik, CashPayService::selectedEntity,
-                        this::setText, { this.text } )
+                    this::setText, { this.text } )
             }
 
             textFieldHorizontal("Банк", 2).apply {
                 assignerProps += AssignerProp(this, CashPay::payeeBankName, CashPayService::selectedEntity,
-                        this::setText, { this.text } )
+                    this::setText, { this.text } )
             }
         }
-
-        maxSpaceYConstraint(21)
-
-        setEnabledAll(false)
-
-        CashPayService.addListener(this)
-
-        ClientPhysicService.addListener(clientPhysicListener)
     }
 
     fun refreshAllDefault() {
@@ -301,10 +434,12 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>>  {
         setEnabledAll(isEditable)
     }
 
-    private fun fromEntity() {
+    fun fromEntity() {
         assignerProps.forEach { it.valueFromProp() }
 
-        pasportTypeCombo.selectedIndex = PasportTypeService.selectedRowIndex
+        if(::pasportTypeCombo.isInitialized) {
+            pasportTypeCombo.selectedIndex = PasportTypeService.selectedRowIndex
+        }
 
         pactCombo.selectedIndex = PactDepartmentService.selectedRowIndex
     }
@@ -400,7 +535,7 @@ class AssignerProp <E> (component: Component,
     }
 }
 
-fun <T> Container.comboBoxChangeItems(label: String, gridY: Int, list: List<T>? = null, gridX: Int = 0): JComboBox<T> {
+fun <T> Container.comboBoxChangeItems(label: String, gridY: Int, list: List<T>? = null, gridX: Int = 0, width: Int = 1): JComboBox<T> {
 
     add( JLabel(label), labelConstraint(gridY, gridX) )
 
@@ -408,7 +543,7 @@ fun <T> Container.comboBoxChangeItems(label: String, gridY: Int, list: List<T>? 
 
     val combo = items?.let { JComboBox(it) } ?: JComboBox()
 
-    add(combo, textConstraint(gridY = gridY, gridX = gridX + 1) )
+    add(combo, textConstraint(gridY = gridY, gridX = gridX + 1, width = width) )
 
     return combo
 }
@@ -462,6 +597,20 @@ class PropFocusListener<E>(private val assignerProp: AssignerProp<E>) : FocusLis
 
     override fun focusLost(e: FocusEvent?) {
         assignerProp.valueToProp()
+    }
+
+    override fun focusGained(e: FocusEvent?) {}
+}
+
+class PayerFocusListener(private val text: JTextComponent, private val panel: PanelCashPay) : FocusListener {
+
+    override fun focusLost(e: FocusEvent?) {
+        if(CashPayService.selectedEntity() != null &&
+            ClientPhysicService.isExistsClearDataIfNotEquals(CashPayService.selectedEntity()!!, text.text) ){
+
+            CashPayService.selectedEntity()!!.payerFio = text.text
+            panel.fromEntity()
+        }
     }
 
     override fun focusGained(e: FocusEvent?) {}

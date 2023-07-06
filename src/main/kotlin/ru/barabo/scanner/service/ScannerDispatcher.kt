@@ -128,20 +128,28 @@ object ScannerDispatcher : KeyEventDispatcher {
         map["TAXPERIOD"] = fields[3]
         map["FIO"] = fields[4].uppercase(Locale.getDefault())
 
-        if(isNotFioPattern(map["FIO"]!!) ) {
+        if(isNotFioPattern(map["FIO"]) ) {
             logger.error("FIO=${map["FIO"]}")
             map["FIO"] = ""
         }
 
         map["PAYER_INN"] = fields[5]
         map["PAYER_DOC_NUMBER"] = fields[7]
+        if(isNotPassportNumberPattern(map["PAYER_DOC_NUMBER"]) ) {
+            logger.error("PAYER_DOC_NUMBER=${map["PAYER_DOC_NUMBER"]}")
+            map["PAYER_DOC_NUMBER"] = ""
+        }
+
         map["PAYER_DOC_LINE"] = fields[8]
+        if(isNotPassportLinePattern(map["PAYER_DOC_LINE"]) ) {
+            logger.error("PAYER_DOC_LINE=${map["PAYER_DOC_LINE"]}")
+            map["PAYER_DOC_LINE"] = ""
+        }
+
         map["PAYER_DOC_ISSUED"] = fields[9]
 
-        if(fields[7].isNotEmpty() && fields[8].isNotEmpty()) {
-            map["PAYER_DOC_TYPE"] = "1000087119"
-            map["PASSPORT_NAME"] = "Паспорт гражданина РФ"
-        }
+        map["PAYER_DOC_TYPE"] = "1000087119"
+        map["PASSPORT_NAME"] = "Паспорт гражданина РФ"
 
         val countPay = fields[15].trim().toInt()
 
@@ -625,5 +633,15 @@ private const val REG_EXP_FIO = "[А-ЯЁ-]+\\s[А-ЯЁ-]+\\s[А-ЯЁ-]+(\\s[А-
 
 private val PATTERN_FIO = Pattern.compile(REG_EXP_FIO)
 
-fun isNotFioPattern(fio: String): Boolean = !PATTERN_FIO.matcher(fio).matches()
+fun isNotFioPattern(fio: String?): Boolean = !PATTERN_FIO.matcher(fio?:"").matches()
 
+private const val REG_EXP_PASSPORT_LINE = "\\d\\d\\d\\d"
+
+private val PATTERN_PASSPORT_LINE = Pattern.compile(REG_EXP_PASSPORT_LINE)
+fun isNotPassportLinePattern(line: String?): Boolean = !PATTERN_PASSPORT_LINE.matcher(line?:"").matches()
+
+
+private const val REG_EXP_PASSPORT_NUMBER = "\\d\\d\\d\\d\\d\\d"
+
+private val PATTERN_PASSPORT_NUMBER = Pattern.compile(REG_EXP_PASSPORT_NUMBER)
+fun isNotPassportNumberPattern(number: String?): Boolean = !PATTERN_PASSPORT_NUMBER.matcher(number?:"").matches()

@@ -12,7 +12,7 @@ import java.util.*
 @SelectQuery("""
 select cp.*, od.PTKB_CASH.getClientLabel(cp.PAYEE_BANK_ID) PAYEE_BANK_NAME, od.accountCode(cp.cash_account) CASH_ACCOUNT_CODE,
    od.PTKB_CASH.getPasportTypeName(cp.PAYER_DOC_TYPE) PASSPORT_NAME, od.PTKB_CASH.getPactName(cp.PHYS_PACT_ID) PACT_NAME,
-   od.PTKB_CASH.getPactCode(cp.PHYS_PACT_ID) PACT_CODE
+   od.PTKB_CASH.getPactCode(cp.PHYS_PACT_ID) PACT_CODE, to_char(cp.updated, 'HH24:MI') TIME_UPDATED
 from od.PTKB_CASH_PAY cp """)
 @TableName("OD.PTKB_CASH_PAY")
 data class CashPay(
@@ -191,7 +191,11 @@ data class CashPay(
 
         @ColumnName("PAYER_INN")
         @ColumnType(java.sql.Types.VARCHAR)
-        var payerInn: String = ""
+        var payerInn: String = "",
+
+        @ColumnName("TIME_UPDATED")
+        @ReadOnly
+        var timeDoc: String = "",
 ) {
         var stateName: String
         get() = when(state) {
