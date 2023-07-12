@@ -2,6 +2,7 @@ package ru.barabo.scanner.gui
 
 import org.jdesktop.swingx.JXDatePicker
 import org.jdesktop.swingx.autocomplete.AutoCompleteDecorator
+import org.slf4j.LoggerFactory
 import ru.barabo.db.EditType
 import ru.barabo.db.service.StoreFilterService
 import ru.barabo.db.service.StoreListener
@@ -14,25 +15,26 @@ import ru.barabo.scanner.service.CashPayService
 import ru.barabo.scanner.service.ClientPhysicService
 import ru.barabo.scanner.service.PactDepartmentService
 import ru.barabo.scanner.service.PasportTypeService
-import java.awt.Component
-import java.awt.Container
-import java.awt.GridBagLayout
+import java.awt.*
 import java.awt.event.FocusEvent
 import java.awt.event.FocusListener
 import java.awt.event.KeyEvent
 import java.awt.event.KeyListener
 import java.sql.Timestamp
+import java.text.DateFormat
+import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.*
 import javax.swing.*
-import javax.swing.text.JTextComponent
+import javax.swing.text.*
 import kotlin.reflect.KMutableProperty1
 import kotlin.reflect.jvm.javaType
 
-//private val logger = LoggerFactory.getLogger(PanelCashPay::class.java)!!
+
+private val logger = LoggerFactory.getLogger(PanelCashPay::class.java)!!
 
 private const val DATE_FORMAT = "dd.MM.yyyy"
 
@@ -84,7 +86,6 @@ class ClientPhysicListener(private val combo: JComboBox<ClientPhysic>) : StoreLi
             combo.selectedIndex = payerIndex
         }
         listeners.forEach { combo.addActionListener(it) }
-
     }
 }
 
@@ -95,6 +96,8 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>>  {
     private lateinit var pasportTypeCombo: JComboBox<PasportType>
 
     private lateinit var pactCombo: JComboBox<PactDepartment>
+
+    lateinit var outDoc: JComboBox<String>
 
     lateinit var isScanOnOff: JCheckBox
 
@@ -159,11 +162,16 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>>  {
                     this::setText, { this.text } )
             }
             datePicker("Дата выдачи", 0, 4).apply {
+                val cusFormater = CustomDateFormatter()
+                val field = JFormattedTextField(cusFormater)
+                field.inputVerifier = FieldVerifier()
+                this.editor = field
+
                 assignerProps += AssignerProp(this.editor, CashPay::dateIssued, CashPayService::selectedEntity,
                     this::setDateFromText
                 ) { this.editor.text }
 
-                this.setFormats( DATE_FORMATTER )
+                //this.setFormats( DATE_FORMATTER )
             }
 
             textFieldHorizontal("Код подразделения", 1, 0).apply {
@@ -171,6 +179,10 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>>  {
                     this::setText, { this.text } )
 
                 codeDepartment = this
+
+                codeDepartment.minimumSize = Dimension(110, codeDepartment.minimumSize.height)
+
+                codeDepartment.preferredSize = Dimension(110, codeDepartment.preferredSize.height)
             }
             comboBoxChangeItems<String>("Кем выдан", 1, gridX = 2, width = 3).apply {
 
@@ -181,14 +193,21 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>>  {
 
                 codeDepartment.addKeyListener(CodeOutKeyListener(CashPay::departmentCode,
                     CashPayService::selectedEntity,this@apply) )
+
+                outDoc = this
+
+                outDoc.preferredSize = Dimension((Toolkit.getDefaultToolkit().screenSize.width/2.2).toInt(), outDoc.preferredSize.height)
             }
 
             datePicker("Дата рождения", 2, 0).apply {
+                val cusFormater = CustomDateFormatter()
+                val field = JFormattedTextField(cusFormater)
+                field.inputVerifier = FieldVerifier()
+                this.editor = field
+
                 assignerProps += AssignerProp(this.editor, CashPay::birthDate, CashPayService::selectedEntity,
                     this::setDateFromText
                 ) { this.editor.text }
-
-                this.setFormats( DATE_FORMATTER )
             }
             textFieldHorizontal("Место рождения", 2, 2, 3).apply {
                 assignerProps += AssignerProp(this, CashPay::birthPlace, CashPayService::selectedEntity,
@@ -242,6 +261,15 @@ class PanelCashPay : JPanel(), StoreListener<List<CashPay>>  {
                     this::setText, { this.text } )
             }
         }
+
+        logger.error("outDoc.maximumSize=${outDoc.maximumSize}")
+        logger.error("outDoc.w=${outDoc.width}")
+        logger.error("outDoc.h=${outDoc.height}")
+
+
+        val screenSize = Toolkit.getDefaultToolkit().screenSize.width
+
+        logger.error("screenSize=$screenSize")
     }
 
     private fun defaultPayView() {
@@ -539,6 +567,8 @@ fun <T> Container.comboBoxChangeItems(label: String, gridY: Int, list: List<T>? 
 
     add( JLabel(label), labelConstraint(gridY, gridX) )
 
+    //this.maximumSize
+
     val items = list?.let { Vector(it) }
 
     val combo = items?.let { JComboBox(it) } ?: JComboBox()
@@ -627,5 +657,103 @@ private fun Container.setEnabledAll(isEnabl: Boolean) {
         if(child is Container) {
             child.setEnabledAll(isEnabl)
         }
+    }
+}
+
+internal class CustomDateFormatter : DefaultFormatter() {
+    val df: DateFormat
+
+    init {
+        df = SimpleDateFormat("dd.MM.yyyy")
+    }
+
+    override fun getDocumentFilter(): DocumentFilter = CustomDateFilter(formattedTextField)
+
+    override fun valueToString(value: Any?): String {
+        return if (value != null) df.format(value) else ""
+    }
+
+    override fun stringToValue(text: String?): Any? {
+        var date: Date? = null
+        try {
+            date = df.parse(text)
+        } catch (pe: ParseException) {
+
+        }
+        return date
+    }
+}
+
+
+internal class CustomDateFilter(var ftf: JFormattedTextField) : DocumentFilter() {
+    var validChars = "0123456789."
+    var day = 2
+    var month = 2
+    var year = 4
+    var sep = '.'
+    var maxLength: Int
+
+    init {
+        maxLength = day + sep.toString().length +
+                month + sep.toString().length + year
+    }
+
+    @Throws(BadLocationException::class)
+    override fun insertString(
+        fb: FilterBypass,
+        offset: Int,
+        str: String,
+        attrs: AttributeSet?
+    ) {
+        replace(fb, offset, 0, str, attrs)
+    }
+
+    @Throws(BadLocationException::class)
+    override fun replace(
+        fb: FilterBypass,
+        offset: Int,
+        length: Int,
+        str: String,
+        attrs: AttributeSet?
+    ) {
+        var str = str
+        val document: Document = fb.document
+        val textLength: Int = document.length
+        val start = ftf.selectionStart
+        val end = ftf.selectionEnd
+        val selectionLength = end - start
+        if (textLength + str.length - selectionLength > maxLength) {
+            Toolkit.getDefaultToolkit().beep()
+            str = str.substring(0, maxLength - textLength + selectionLength)
+        }
+        val source = str.toCharArray()
+        val result = CharArray(source.size + 2 * sep.toString().length)
+        var k = 0
+        for (j in source.indices) {
+            if (isSepNext(offset, j)) result[k++] = sep
+            if (validChars.indexOf(source[j]) != -1) result[k++] = source[j] else Toolkit.getDefaultToolkit().beep()
+        }
+        fb.replace(offset, length, String(result, 0, k), attrs)
+    }
+
+    private fun isSepNext(offset: Int, j: Int): Boolean {
+        val pos = offset + j
+        return pos == month || pos == month + 1 + day
+    }
+}
+
+
+internal class FieldVerifier : InputVerifier() {
+    var sep = "."
+    override fun verify(input: JComponent): Boolean {
+        val ftf = input as JFormattedTextField
+        val s = ftf.text
+        if (s.indexOf(sep) == 2 && s.lastIndexOf(sep) == 5 && s.length == 10) return true
+        Toolkit.getDefaultToolkit().beep()
+        return false
+    }
+
+    fun shouldYeildFocus(input: JComponent): Boolean {
+        return verify(input)
     }
 }

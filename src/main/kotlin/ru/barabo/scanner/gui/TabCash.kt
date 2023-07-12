@@ -16,7 +16,9 @@ class TabCash : JPanel()  {
         add(ToolBarCash(panelCashPay), BorderLayout.NORTH)
 
         val mainHorizontalSplit = JSplitPane(HORIZONTAL_SPLIT, panelCashPay, JScrollPane(TableCashPay()) ).apply {
-            resizeWeight = 0.75
+            resizeWeight = 0.8
+
+            this.isOneTouchExpandable = true
         }
 
         add(mainHorizontalSplit, BorderLayout.CENTER)
